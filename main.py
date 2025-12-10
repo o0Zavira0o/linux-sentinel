@@ -1,36 +1,39 @@
 import time
 import sys
 from src.monitor import SystemMonitor
-from src.logger import SentinelLogger  
+from src.logger import SentinelLogger
+from src.watchdog import ServiceWatchdog 
 
 def start_sentinel():
     print("🛡️  Linux Sentinel Started...")
     
     monitor = SystemMonitor()
-    logger = SentinelLogger() 
+    logger = SentinelLogger()
     
-    logger.info("Sentinel started monitoring.") 
+
+
+    watchdog = ServiceWatchdog("dummy_service.py", "python dummy_service.py")
+    
+    logger.info("Sentinel started monitoring & watching services.")
 
     try:
         while True:
+
             report = monitor.get_report()
-            
-           
-            cpu_usage = monitor.get_cpu_usage()
-            
-           
             print("\033c", end="")
             print(report)
-
-           
-            if isinstance(cpu_usage, (int, float)) and cpu_usage > 50:
-                 logger.warning(f"High CPU Load detected: {cpu_usage}%")
             
+            status = "✅ Service is Running"
+            if watchdog.is_running():
+                print(f"\n🐕 Watchdog: {status}")
+            else:
+                print(f"\n🐕 Watchdog: ⚠️ Service DEAD! Restarting...")
+                watchdog.check_and_heal() 
+
             time.sleep(2)
             
     except KeyboardInterrupt:
-        print("\n🛑 Sentinel Stopped.")
-        logger.info("Sentinel stopped by user.") 
+        logger.info("Sentinel stopped.")
         sys.exit(0)
 
 if __name__ == "__main__":

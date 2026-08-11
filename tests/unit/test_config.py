@@ -48,6 +48,19 @@ class ConfigLoaderTests(
             0.5,
         )
 
+        self.assertTrue(
+            loaded.config.storage.enabled
+        )
+
+        self.assertEqual(
+            loaded.config.storage.directory,
+            "~/.local/state/sentinel-x/events",
+        )
+
+        self.assertTrue(
+            loaded.config.storage.flush_on_write
+        )
+
     def test_valid_explicit_config_is_loaded(
         self,
     ) -> None:
@@ -62,6 +75,11 @@ class ConfigLoaderTests(
                     "[agent]\n"
                     'instance_name = "lab-node-01"\n'
                     "tick_interval = 1.25\n"
+                    "\n"
+                    "[storage]\n"
+                    "enabled = false\n"
+                    'directory = "./events"\n'
+                    "flush_on_write = false\n"
                 ),
                 encoding="utf-8",
             )
@@ -78,6 +96,19 @@ class ConfigLoaderTests(
         self.assertEqual(
             loaded.config.agent.tick_interval,
             1.25,
+        )
+
+        self.assertFalse(
+            loaded.config.storage.enabled
+        )
+
+        self.assertEqual(
+            loaded.config.storage.directory,
+            "./events",
+        )
+
+        self.assertFalse(
+            loaded.config.storage.flush_on_write
         )
 
         self.assertIsNotNone(
@@ -105,7 +136,7 @@ class ConfigLoaderTests(
                     config_path
                 )
 
-    def test_unknown_key_is_rejected(
+    def test_unknown_agent_key_is_rejected(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -129,7 +160,7 @@ class ConfigLoaderTests(
                     config_path
                 )
 
-    def test_invalid_value_type_is_rejected(
+    def test_invalid_tick_interval_type_is_rejected(
         self,
     ) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -178,6 +209,54 @@ class ConfigLoaderTests(
             ):
                 load_config(
                     Path(tmpdir)
+                )
+
+    def test_invalid_storage_boolean_is_rejected(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = (
+                Path(tmpdir)
+                / "invalid-storage.toml"
+            )
+
+            config_path.write_text(
+                (
+                    "[storage]\n"
+                    'enabled = "yes"\n'
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(
+                ConfigSchemaError
+            ):
+                load_config(
+                    config_path
+                )
+
+    def test_unknown_storage_key_is_rejected(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = (
+                Path(tmpdir)
+                / "unknown-storage.toml"
+            )
+
+            config_path.write_text(
+                (
+                    "[storage]\n"
+                    "flush_every_time = true\n"
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(
+                ConfigSchemaError
+            ):
+                load_config(
+                    config_path
                 )
 
 

@@ -16,6 +16,7 @@ from sentinel_x.config.models import (
     AgentConfig,
     ConfigValidationError,
     SentinelConfig,
+    StorageConfig,
 )
 
 
@@ -30,5 +31,6 @@ __all__ = [
     "LoadedConfig",
     "MAX_CONFIG_BYTES",
     "SentinelConfig",
+    "StorageConfig",
     "load_config",
 ]

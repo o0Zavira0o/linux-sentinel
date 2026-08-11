@@ -11,6 +11,7 @@ from sentinel_x.config.models import (
     AgentConfig,
     ConfigValidationError,
     SentinelConfig,
+    StorageConfig,
 )
 
 
@@ -53,6 +54,44 @@ class LoadedConfig:
 
         return str(self.source_path)
 
+    @property
+    def base_directory(self) -> Path:
+        """Return the base directory for relative config paths."""
+
+        if self.source_path is not None:
+            return self.source_path.parent
+
+        return Path.cwd()
+
+    def resolve_path(
+        self,
+        value: str | Path,
+    ) -> Path:
+        """Resolve a path originating from configuration.
+
+        Absolute paths and paths beginning with ``~`` are
+        respected directly.
+
+        Relative paths are resolved relative to the directory
+        containing the loaded configuration file. When built-in
+        defaults are used, they are resolved relative to the
+        current working directory.
+        """
+
+        candidate = Path(value).expanduser()
+
+        if not candidate.is_absolute():
+            candidate = (
+                self.base_directory
+                / candidate
+            )
+
+        try:
+            return candidate.resolve()
+
+        except OSError:
+            return candidate.absolute()
+
 
 def load_config(
     path: str | Path | None = None,
@@ -92,6 +131,7 @@ def load_config(
 
     try:
         file_size = config_path.stat().st_size
+
     except OSError as exc:
         raise ConfigFileError(
             "could not inspect configuration file: "
@@ -110,11 +150,13 @@ def load_config(
             raw_config = tomllib.load(
                 file_handle
             )
+
     except tomllib.TOMLDecodeError as exc:
         raise ConfigParseError(
             "invalid TOML configuration in "
             f"{config_path}: {exc}"
         ) from exc
+
     except OSError as exc:
         raise ConfigFileError(
             "could not read configuration file "
@@ -126,13 +168,10 @@ def load_config(
     )
 
     try:
-        resolved_path = (
-            config_path.resolve()
-        )
+        resolved_path = config_path.resolve()
+
     except OSError:
-        resolved_path = (
-            config_path.absolute()
-        )
+        resolved_path = config_path.absolute()
 
     return LoadedConfig(
         config=config,
@@ -147,7 +186,10 @@ def _parse_root(
 
     _reject_unknown_keys(
         mapping=raw_config,
-        allowed={"agent"},
+        allowed={
+            "agent",
+            "storage",
+        },
         context="root",
     )
 
@@ -156,20 +198,32 @@ def _parse_root(
         {},
     )
 
-    if not isinstance(
-        raw_agent,
-        dict,
-    ):
+    raw_storage = raw_config.get(
+        "storage",
+        {},
+    )
+
+    if not isinstance(raw_agent, dict):
         raise ConfigSchemaError(
             "[agent] must be a TOML table"
+        )
+
+    if not isinstance(raw_storage, dict):
+        raise ConfigSchemaError(
+            "[storage] must be a TOML table"
         )
 
     agent = _parse_agent(
         raw_agent
     )
 
+    storage = _parse_storage(
+        raw_storage
+    )
+
     return SentinelConfig(
-        agent=agent
+        agent=agent,
+        storage=storage,
     )
 
 
@@ -198,6 +252,44 @@ def _parse_agent(
                 0.5,
             ),
         )
+
+    except ConfigValidationError as exc:
+        raise ConfigSchemaError(
+            str(exc)
+        ) from exc
+
+
+def _parse_storage(
+    raw_storage: Mapping[str, Any],
+) -> StorageConfig:
+    """Parse the [storage] configuration section."""
+
+    _reject_unknown_keys(
+        mapping=raw_storage,
+        allowed={
+            "enabled",
+            "directory",
+            "flush_on_write",
+        },
+        context="storage",
+    )
+
+    try:
+        return StorageConfig(
+            enabled=raw_storage.get(
+                "enabled",
+                True,
+            ),
+            directory=raw_storage.get(
+                "directory",
+                "~/.local/state/sentinel-x/events",
+            ),
+            flush_on_write=raw_storage.get(
+                "flush_on_write",
+                True,
+            ),
+        )
+
     except ConfigValidationError as exc:
         raise ConfigSchemaError(
             str(exc)

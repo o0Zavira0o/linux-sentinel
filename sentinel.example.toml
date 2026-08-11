@@ -1,0 +1,9 @@
+[agent]
+instance_name = "sentinel-x"
+tick_interval = 0.5
+
+
+[storage]
+enabled = true
+directory = "~/.local/state/sentinel-x/events"
+flush_on_write = true

@@ -26,6 +26,9 @@ htmlcov/
 # Logs
 *.log
 
+# Local Sentinel-X runtime state
+.sentinel-x/
+
 # Local Sentinel-X configuration
 sentinel.toml
 

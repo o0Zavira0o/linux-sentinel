@@ -23,6 +23,10 @@ from sentinel_x.core import (
     SentinelEngine,
     SentinelEvent,
 )
+from sentinel_x.storage import (
+    EventRecorderError,
+    JsonlEventRecorder,
+)
 
 
 _MINIMUM_PYTHON = (3, 11)
@@ -265,6 +269,21 @@ def _run_config_check(
         f"{config.agent.tick_interval:.3f} seconds"
     )
 
+    print(
+        "Event storage: "
+        f"{'enabled' if config.storage.enabled else 'disabled'}"
+    )
+
+    print(
+        "Storage directory: "
+        f"{loaded.resolve_path(config.storage.directory)}"
+    )
+
+    print(
+        "Flush on write: "
+        f"{config.storage.flush_on_write}"
+    )
+
     return 0
 
 
@@ -322,6 +341,52 @@ def _run_engine(
         _print_event
     )
 
+    recorder: JsonlEventRecorder | None = None
+
+    if config.storage.enabled:
+        storage_directory = (
+            loaded.resolve_path(
+                config.storage.directory
+            )
+        )
+
+        try:
+            recorder = JsonlEventRecorder(
+                directory=storage_directory,
+                instance_name=(
+                    config.agent.instance_name
+                ),
+                flush_on_write=(
+                    config.storage.flush_on_write
+                ),
+            )
+
+        except EventRecorderError as exc:
+            print(
+                "storage error: "
+                f"{exc}",
+                file=sys.stderr,
+            )
+
+            return 3
+
+        event_bus.subscribe(
+            recorder
+        )
+
+        print(
+            f"Run ID: {recorder.run_id}"
+        )
+
+        print(
+            f"Event store: {recorder.path}"
+        )
+
+    else:
+        print(
+            "Event store: disabled"
+        )
+
     engine = SentinelEngine(
         event_bus=event_bus,
         instance_name=(
@@ -373,6 +438,8 @@ def _run_engine(
         handle_shutdown_signal,
     )
 
+    storage_failed = False
+
     try:
         engine.run_forever(
             tick_interval=(
@@ -397,6 +464,31 @@ def _run_engine(
             signal.SIGTERM,
             previous_sigterm,
         )
+
+        if recorder is not None:
+            if recorder.last_error is not None:
+                print(
+                    "storage error occurred during runtime: "
+                    f"{recorder.last_error}",
+                    file=sys.stderr,
+                )
+
+                storage_failed = True
+
+            try:
+                recorder.close()
+
+            except EventRecorderError as exc:
+                print(
+                    "storage error during shutdown: "
+                    f"{exc}",
+                    file=sys.stderr,
+                )
+
+                storage_failed = True
+
+    if storage_failed:
+        return 3
 
     return 0
 

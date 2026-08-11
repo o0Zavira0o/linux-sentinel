@@ -1,12 +1,11 @@
 name: Sentinel-X Quality
 
 on:
-  push:
-    branches:
-      - main
-      - sentinel-x-phase0
+  push: {}
+  pull_request: {}
 
-  pull_request:
+permissions:
+  contents: read
 
 jobs:
   quality:
@@ -26,10 +25,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "sentinel-x"
+version = "0.1.0"
+description = "Linux-native research platform for safe autonomous fault detection, diagnosis, and remediation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+
+[project.scripts]
+sentinel-x = "sentinel_x.cli:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sentinel_x*"]

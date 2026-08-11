@@ -58,6 +58,22 @@ def _validate_nonnegative_float(name: str, value: float) -> None:
         raise ValueError(f"{name} must not be negative")
 
 
+def _validate_percentage(name: str, value: float) -> None:
+    """Validate a finite percentage in the inclusive 0-100 range."""
+
+    _validate_nonnegative_float(name, value)
+
+    if value > 100.0:
+        raise ValueError(f"{name} must not exceed 100")
+
+
+def _validate_aware_datetime(name: str, value: datetime) -> None:
+    """Require a timezone-aware timestamp."""
+
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{name} must be timezone-aware")
+
+
 @dataclass(frozen=True, slots=True)
 class HostIdentity:
     """Stable host and operating-system identity fields."""
@@ -186,6 +202,104 @@ class CpuTimes:
 
 
 @dataclass(frozen=True, slots=True)
+class CpuUtilization:
+    """CPU utilization calculated from two aggregate /proc/stat samples.
+
+    user_percent and nice_percent exclude guest and guest_nice
+    respectively. Guest execution is reported separately.
+    """
+
+    total_ticks: int
+    busy_percent: float
+    user_percent: float
+    nice_percent: float
+    system_percent: float
+    idle_percent: float
+    iowait_percent: float
+    irq_percent: float
+    softirq_percent: float
+    steal_percent: float
+    guest_percent: float
+    guest_nice_percent: float
+    iowait_regressed: bool = False
+    guest_accounting_adjusted: bool = False
+
+    def __post_init__(self) -> None:
+        """Validate utilization percentages and sampling metadata."""
+
+        _validate_nonnegative_int("total_ticks", self.total_ticks)
+
+        if self.total_ticks == 0:
+            raise ValueError("total_ticks must be greater than zero")
+
+        percentages = (
+            ("busy_percent", self.busy_percent),
+            ("user_percent", self.user_percent),
+            ("nice_percent", self.nice_percent),
+            ("system_percent", self.system_percent),
+            ("idle_percent", self.idle_percent),
+            ("iowait_percent", self.iowait_percent),
+            ("irq_percent", self.irq_percent),
+            ("softirq_percent", self.softirq_percent),
+            ("steal_percent", self.steal_percent),
+            ("guest_percent", self.guest_percent),
+            ("guest_nice_percent", self.guest_nice_percent),
+        )
+
+        for name, value in percentages:
+            _validate_percentage(name, value)
+
+        category_total = (
+            self.user_percent
+            + self.nice_percent
+            + self.system_percent
+            + self.idle_percent
+            + self.iowait_percent
+            + self.irq_percent
+            + self.softirq_percent
+            + self.steal_percent
+            + self.guest_percent
+            + self.guest_nice_percent
+        )
+
+        if not math.isclose(category_total, 100.0, abs_tol=1e-6):
+            raise ValueError("CPU utilization categories must sum to 100 percent")
+
+        expected_busy = 100.0 - self.idle_percent - self.iowait_percent
+
+        if not math.isclose(self.busy_percent, expected_busy, abs_tol=1e-6):
+            raise ValueError(
+                "busy_percent must equal 100 - idle_percent - iowait_percent"
+            )
+
+        if type(self.iowait_regressed) is not bool:
+            raise TypeError("iowait_regressed must be a boolean")
+
+        if type(self.guest_accounting_adjusted) is not bool:
+            raise TypeError("guest_accounting_adjusted must be a boolean")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialization-friendly utilization mapping."""
+
+        return {
+            "total_ticks": self.total_ticks,
+            "busy_percent": self.busy_percent,
+            "user_percent": self.user_percent,
+            "nice_percent": self.nice_percent,
+            "system_percent": self.system_percent,
+            "idle_percent": self.idle_percent,
+            "iowait_percent": self.iowait_percent,
+            "irq_percent": self.irq_percent,
+            "softirq_percent": self.softirq_percent,
+            "steal_percent": self.steal_percent,
+            "guest_percent": self.guest_percent,
+            "guest_nice_percent": self.guest_nice_percent,
+            "iowait_regressed": self.iowait_regressed,
+            "guest_accounting_adjusted": self.guest_accounting_adjusted,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class LoadAverage:
     """Linux load-average and runnable-task snapshot."""
 
@@ -243,8 +357,7 @@ class HostSnapshot:
     def __post_init__(self) -> None:
         """Require a timezone-aware capture timestamp."""
 
-        if self.captured_at.tzinfo is None or self.captured_at.utcoffset() is None:
-            raise ValueError("captured_at must be timezone-aware")
+        _validate_aware_datetime("captured_at", self.captured_at)
 
     def to_attributes(self) -> dict[str, object]:
         """Return structured attributes suitable for a SentinelEvent."""
@@ -253,5 +366,46 @@ class HostSnapshot:
             "captured_at": self.captured_at.isoformat(),
             "host": self.identity.to_dict(),
             "cpu_times": self.cpu_times.to_dict(),
+            "load_average": self.load_average.to_dict(),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class HostObservation:
+    """Sampled Linux host observation derived from two raw snapshots."""
+
+    sample_started_at: datetime
+    captured_at: datetime
+    sample_interval_seconds: float
+    identity: HostIdentity
+    cpu_times_start: CpuTimes
+    cpu_times_end: CpuTimes
+    cpu_utilization: CpuUtilization
+    load_average: LoadAverage
+
+    def __post_init__(self) -> None:
+        """Validate sampled observation metadata."""
+
+        _validate_aware_datetime("sample_started_at", self.sample_started_at)
+        _validate_aware_datetime("captured_at", self.captured_at)
+        _validate_nonnegative_float(
+            "sample_interval_seconds",
+            self.sample_interval_seconds,
+        )
+
+        if self.sample_interval_seconds == 0:
+            raise ValueError("sample_interval_seconds must be greater than zero")
+
+    def to_attributes(self) -> dict[str, object]:
+        """Return structured event attributes for the sampled observation."""
+
+        return {
+            "sample_started_at": self.sample_started_at.isoformat(),
+            "captured_at": self.captured_at.isoformat(),
+            "sample_interval_seconds": self.sample_interval_seconds,
+            "host": self.identity.to_dict(),
+            "cpu_times_start": self.cpu_times_start.to_dict(),
+            "cpu_times_end": self.cpu_times_end.to_dict(),
+            "cpu_utilization": self.cpu_utilization.to_dict(),
             "load_average": self.load_average.to_dict(),
         }

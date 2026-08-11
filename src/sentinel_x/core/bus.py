@@ -180,10 +180,18 @@ class EventBus:
     def _handler_name(
         handler: EventHandler,
     ) -> str:
-        """Return a useful display name for a handler."""
+        """Return a stable human-readable handler name."""
 
-        return getattr(
+        qualname = getattr(
             handler,
             "__qualname__",
-            handler.__class__.__qualname__,
+            None,
         )
+
+        if isinstance(
+            qualname,
+            str,
+        ):
+            return qualname
+
+        return handler.__class__.__qualname__

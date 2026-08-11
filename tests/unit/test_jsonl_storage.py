@@ -6,7 +6,6 @@ import json
 import stat
 import tempfile
 import unittest
-from pathlib import Path
 
 from sentinel_x.core import (
     EventKind,

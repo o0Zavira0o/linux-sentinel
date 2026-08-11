@@ -103,13 +103,20 @@ def load_config(
     are returned.
     """
 
-    explicit_path = path is not None
+    if path is None:
+        explicit_path = False
 
-    config_path = (
-        Path(path).expanduser()
-        if explicit_path
-        else Path.cwd() / DEFAULT_CONFIG_FILENAME
-    )
+        config_path = (
+            Path.cwd()
+            / DEFAULT_CONFIG_FILENAME
+        )
+
+    else:
+        explicit_path = True
+
+        config_path = (
+            Path(path).expanduser()
+        )
 
     if not config_path.exists():
         if explicit_path:
@@ -130,7 +137,9 @@ def load_config(
         )
 
     try:
-        file_size = config_path.stat().st_size
+        file_size = (
+            config_path.stat().st_size
+        )
 
     except OSError as exc:
         raise ConfigFileError(
@@ -146,7 +155,9 @@ def load_config(
         )
 
     try:
-        with config_path.open("rb") as file_handle:
+        with config_path.open(
+            "rb"
+        ) as file_handle:
             raw_config = tomllib.load(
                 file_handle
             )
@@ -168,10 +179,14 @@ def load_config(
     )
 
     try:
-        resolved_path = config_path.resolve()
+        resolved_path = (
+            config_path.resolve()
+        )
 
     except OSError:
-        resolved_path = config_path.absolute()
+        resolved_path = (
+            config_path.absolute()
+        )
 
     return LoadedConfig(
         config=config,
@@ -203,12 +218,18 @@ def _parse_root(
         {},
     )
 
-    if not isinstance(raw_agent, dict):
+    if not isinstance(
+        raw_agent,
+        dict,
+    ):
         raise ConfigSchemaError(
             "[agent] must be a TOML table"
         )
 
-    if not isinstance(raw_storage, dict):
+    if not isinstance(
+        raw_storage,
+        dict,
+    ):
         raise ConfigSchemaError(
             "[storage] must be a TOML table"
         )

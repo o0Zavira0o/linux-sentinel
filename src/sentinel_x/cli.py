@@ -7,9 +7,17 @@ import signal
 import sys
 from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
+from dataclasses import replace
 from types import FrameType
 
 from sentinel_x import __version__
+from sentinel_x.config import (
+    ConfigError,
+    ConfigValidationError,
+    LoadedConfig,
+    SentinelConfig,
+    load_config,
+)
 from sentinel_x.core import (
     EventBus,
     SentinelEngine,
@@ -18,6 +26,23 @@ from sentinel_x.core import (
 
 
 _MINIMUM_PYTHON = (3, 11)
+
+
+def _add_config_argument(
+    parser: ArgumentParser,
+) -> None:
+    """Add the common configuration-file argument."""
+
+    parser.add_argument(
+        "--config",
+        metavar="PATH",
+        default=None,
+        help=(
+            "Path to a Sentinel-X TOML configuration file. "
+            "If omitted, ./sentinel.toml is discovered when "
+            "present; otherwise built-in defaults are used."
+        ),
+    )
 
 
 def _build_parser() -> ArgumentParser:
@@ -50,6 +75,20 @@ def _build_parser() -> ArgumentParser:
         ),
     )
 
+    config_check_parser = (
+        subparsers.add_parser(
+            "config-check",
+            help=(
+                "Load and validate Sentinel-X "
+                "configuration without starting the agent."
+            ),
+        )
+    )
+
+    _add_config_argument(
+        config_check_parser
+    )
+
     run_parser = subparsers.add_parser(
         "run",
         help=(
@@ -57,13 +96,16 @@ def _build_parser() -> ArgumentParser:
         ),
     )
 
+    _add_config_argument(
+        run_parser
+    )
+
     run_parser.add_argument(
         "--tick-interval",
         type=float,
-        default=0.5,
+        default=None,
         help=(
-            "Core loop wake-up interval in seconds. "
-            "Default: 0.5"
+            "Override agent.tick_interval for this run only."
         ),
     )
 
@@ -144,6 +186,88 @@ def _run_doctor() -> int:
     return 1
 
 
+def _load_configuration(
+    config_path: str | None,
+) -> LoadedConfig | None:
+    """Load configuration and render operator-facing errors."""
+
+    try:
+        return load_config(
+            config_path
+        )
+
+    except ConfigError as exc:
+        print(
+            f"configuration error: {exc}",
+            file=sys.stderr,
+        )
+
+        return None
+
+
+def _apply_run_overrides(
+    config: SentinelConfig,
+    args: Namespace,
+) -> SentinelConfig:
+    """Apply explicitly supported CLI runtime overrides."""
+
+    if args.tick_interval is None:
+        return config
+
+    updated_agent = replace(
+        config.agent,
+        tick_interval=args.tick_interval,
+    )
+
+    return replace(
+        config,
+        agent=updated_agent,
+    )
+
+
+def _run_config_check(
+    args: Namespace,
+) -> int:
+    """Validate configuration without starting Sentinel-X."""
+
+    loaded = _load_configuration(
+        args.config
+    )
+
+    if loaded is None:
+        return 2
+
+    config = loaded.config
+
+    print(
+        "Sentinel-X configuration check"
+    )
+
+    print(
+        "=" * 30
+    )
+
+    print(
+        f"Source: {loaded.source_label}"
+    )
+
+    print(
+        "Status: VALID"
+    )
+
+    print(
+        "Agent instance: "
+        f"{config.agent.instance_name}"
+    )
+
+    print(
+        "Tick interval: "
+        f"{config.agent.tick_interval:.3f} seconds"
+    )
+
+    return 0
+
+
 def _print_event(
     event: SentinelEvent,
 ) -> None:
@@ -161,14 +285,36 @@ def _run_engine(
 ) -> int:
     """Create and run the Phase-0 Sentinel-X engine."""
 
-    if args.tick_interval <= 0:
+    loaded = _load_configuration(
+        args.config
+    )
+
+    if loaded is None:
+        return 2
+
+    try:
+        config = _apply_run_overrides(
+            loaded.config,
+            args,
+        )
+
+    except ConfigValidationError as exc:
         print(
-            "error: --tick-interval must "
-            "be greater than zero",
+            "configuration error: "
+            f"invalid CLI override: {exc}",
             file=sys.stderr,
         )
 
         return 2
+
+    print(
+        f"Configuration: {loaded.source_label}"
+    )
+
+    print(
+        "Agent instance: "
+        f"{config.agent.instance_name}"
+    )
 
     event_bus = EventBus()
 
@@ -177,7 +323,10 @@ def _run_engine(
     )
 
     engine = SentinelEngine(
-        event_bus=event_bus
+        event_bus=event_bus,
+        instance_name=(
+            config.agent.instance_name
+        ),
     )
 
     def handle_shutdown_signal(
@@ -227,7 +376,7 @@ def _run_engine(
     try:
         engine.run_forever(
             tick_interval=(
-                args.tick_interval
+                config.agent.tick_interval
             )
         )
 
@@ -265,6 +414,11 @@ def main(
 
     if args.command == "doctor":
         return _run_doctor()
+
+    if args.command == "config-check":
+        return _run_config_check(
+            args
+        )
 
     if args.command == "run":
         return _run_engine(

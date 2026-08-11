@@ -26,6 +26,9 @@ htmlcov/
 # Logs
 *.log
 
+# Local Sentinel-X configuration
+sentinel.toml
+
 # Local environment files
 .env
 .env.*

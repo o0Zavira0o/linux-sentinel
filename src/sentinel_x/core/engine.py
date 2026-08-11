@@ -35,6 +35,7 @@ class EngineRunConflictError(
 class EngineSnapshot:
     """Read-only snapshot of engine control-plane state."""
 
+    instance_name: str
     state: AgentState
     stop_requested: bool
     stop_reason: str | None
@@ -43,7 +44,8 @@ class EngineSnapshot:
 class SentinelEngine:
     """Lifecycle coordinator for Sentinel-X.
 
-    Phase 0 deliberately keeps the runtime loop empty.
+    Phase 0 deliberately keeps the runtime loop operationally
+    empty.
 
     Later phases will attach collectors, detection pipelines,
     diagnosis modules, and remediation logic without changing
@@ -57,8 +59,31 @@ class SentinelEngine:
     def __init__(
         self,
         event_bus: EventBus,
+        *,
+        instance_name: str = "sentinel-x",
     ) -> None:
+        if not isinstance(
+            instance_name,
+            str,
+        ):
+            raise TypeError(
+                "instance_name must be a string"
+            )
+
+        normalized_instance_name = (
+            instance_name.strip()
+        )
+
+        if not normalized_instance_name:
+            raise ValueError(
+                "instance_name must not be empty"
+            )
+
         self._event_bus = event_bus
+
+        self._instance_name = (
+            normalized_instance_name
+        )
 
         self._lifecycle = (
             AgentLifecycle()
@@ -80,6 +105,12 @@ class SentinelEngine:
 
         return self._lifecycle.state
 
+    @property
+    def instance_name(self) -> str:
+        """Return the configured Sentinel-X instance name."""
+
+        return self._instance_name
+
     def snapshot(
         self,
     ) -> EngineSnapshot:
@@ -87,6 +118,9 @@ class SentinelEngine:
 
         with self._control_lock:
             return EngineSnapshot(
+                instance_name=(
+                    self._instance_name
+                ),
                 state=self._lifecycle.state,
                 stop_requested=(
                     self._stop_event.is_set()
@@ -123,6 +157,9 @@ class SentinelEngine:
                     "the running state."
                 ),
                 attributes={
+                    "instance_name": (
+                        self._instance_name
+                    ),
                     "state": (
                         AgentState.RUNNING.value
                     ),
@@ -175,6 +212,9 @@ class SentinelEngine:
                 ),
                 severity=EventSeverity.INFO,
                 attributes={
+                    "instance_name": (
+                        self._instance_name
+                    ),
                     "reason": normalized_reason,
                 },
             )
@@ -248,6 +288,9 @@ class SentinelEngine:
                     "Sentinel-X engine stopped."
                 ),
                 attributes={
+                    "instance_name": (
+                        self._instance_name
+                    ),
                     "state": (
                         AgentState.STOPPED.value
                     ),
@@ -310,6 +353,9 @@ class SentinelEngine:
                         EventSeverity.CRITICAL
                     ),
                     attributes={
+                        "instance_name": (
+                            self._instance_name
+                        ),
                         "error_type": (
                             type(exc).__name__
                         ),

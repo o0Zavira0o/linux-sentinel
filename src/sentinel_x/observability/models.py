@@ -375,6 +375,95 @@ class MemoryStats:
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryUtilization:
+    """Derived memory and swap utilization metrics."""
+
+    used_estimate_kb: int
+    available_percent: float
+    used_estimate_percent: float
+    swap_used_kb: int
+    swap_used_percent: float | None
+    swap_configured: bool
+
+    def __post_init__(self) -> None:
+        """Validate derived memory utilization metrics."""
+
+        _validate_nonnegative_int("used_estimate_kb", self.used_estimate_kb)
+        _validate_nonnegative_int("swap_used_kb", self.swap_used_kb)
+        _validate_percentage("available_percent", self.available_percent)
+        _validate_percentage(
+            "used_estimate_percent",
+            self.used_estimate_percent,
+        )
+
+        if not math.isclose(
+            self.available_percent + self.used_estimate_percent,
+            100.0,
+            abs_tol=1e-6,
+        ):
+            raise ValueError(
+                "available_percent and used_estimate_percent must sum to 100"
+            )
+
+        if self.swap_used_percent is not None:
+            _validate_percentage("swap_used_percent", self.swap_used_percent)
+
+        if type(self.swap_configured) is not bool:
+            raise TypeError("swap_configured must be a boolean")
+
+        if self.swap_configured and self.swap_used_percent is None:
+            raise ValueError(
+                "swap_used_percent must be present when swap is configured"
+            )
+
+        if not self.swap_configured:
+            if self.swap_used_kb != 0:
+                raise ValueError(
+                    "swap_used_kb must be zero when swap is not configured"
+                )
+
+            if self.swap_used_percent is not None:
+                raise ValueError(
+                    "swap_used_percent must be None when swap is not configured"
+                )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialization-friendly utilization mapping."""
+
+        return {
+            "used_estimate_kb": self.used_estimate_kb,
+            "available_percent": self.available_percent,
+            "used_estimate_percent": self.used_estimate_percent,
+            "swap_used_kb": self.swap_used_kb,
+            "swap_used_percent": self.swap_used_percent,
+            "swap_configured": self.swap_configured,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryObservation:
+    """One timestamped Linux memory and swap observation."""
+
+    captured_at: datetime
+    stats: MemoryStats
+    utilization: MemoryUtilization
+
+    def __post_init__(self) -> None:
+        """Validate the memory observation timestamp."""
+
+        _validate_aware_datetime("captured_at", self.captured_at)
+
+    def to_attributes(self) -> dict[str, object]:
+        """Return structured event attributes for memory telemetry."""
+
+        return {
+            "captured_at": self.captured_at.isoformat(),
+            "memory_stats": self.stats.to_dict(),
+            "memory_utilization": self.utilization.to_dict(),
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class LoadAverage:
     """Linux load-average and runnable-task snapshot."""
 

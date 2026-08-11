@@ -5,13 +5,20 @@ from __future__ import annotations
 from sentinel_x.observability.events import (
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
+    MEMORY_OBSERVATION_SOURCE,
+    MEMORY_OBSERVATION_TYPE,
     host_observation_to_event,
+    memory_observation_to_event,
 )
 from sentinel_x.observability.linux_host import (
     LinuxHostReader,
     LinuxObservationError,
     LinuxObservationParseError,
     LinuxObservationReadError,
+)
+from sentinel_x.observability.memory import (
+    build_memory_observation,
+    calculate_memory_utilization,
 )
 from sentinel_x.observability.models import (
     CpuTimes,
@@ -20,7 +27,9 @@ from sentinel_x.observability.models import (
     HostObservation,
     HostSnapshot,
     LoadAverage,
+    MemoryObservation,
     MemoryStats,
+    MemoryUtilization,
 )
 from sentinel_x.observability.sampling import (
     MAX_SAMPLE_INTERVAL_SECONDS,
@@ -36,6 +45,8 @@ __all__ = [
     "HOST_OBSERVATION_SOURCE",
     "HOST_OBSERVATION_TYPE",
     "MAX_SAMPLE_INTERVAL_SECONDS",
+    "MEMORY_OBSERVATION_SOURCE",
+    "MEMORY_OBSERVATION_TYPE",
     "MIN_SAMPLE_INTERVAL_SECONDS",
     "CpuSamplingError",
     "CpuTimes",
@@ -48,9 +59,14 @@ __all__ = [
     "LinuxObservationParseError",
     "LinuxObservationReadError",
     "LoadAverage",
+    "MemoryObservation",
     "MemoryStats",
+    "MemoryUtilization",
     "build_host_observation",
+    "build_memory_observation",
     "calculate_cpu_utilization",
+    "calculate_memory_utilization",
     "host_observation_to_event",
+    "memory_observation_to_event",
     "validate_sample_interval",
 ]

@@ -11,17 +11,22 @@ from sentinel_x.core import EventBus, EventKind
 from sentinel_x.observability import (
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
+    MEMORY_OBSERVATION_SOURCE,
+    MEMORY_OBSERVATION_TYPE,
     CpuTimes,
     HostIdentity,
     HostSnapshot,
     LoadAverage,
+    MemoryStats,
     build_host_observation,
+    build_memory_observation,
     host_observation_to_event,
+    memory_observation_to_event,
 )
 from sentinel_x.storage import JsonlEventRecorder
 
 
-def _observation():
+def _host_observation():
     identity = HostIdentity(
         hostname="fedora-lab",
         kernel_name="Linux",
@@ -86,11 +91,31 @@ def _observation():
     )
 
 
-class HostObservationEventTests(unittest.TestCase):
-    """Tests for host-observation event adaptation and persistence."""
+def _memory_observation():
+    stats = MemoryStats(
+        mem_total_kb=16_384_000,
+        mem_available_kb=8_192_000,
+        mem_free_kb=2_048_000,
+        buffers_kb=256_000,
+        cached_kb=4_096_000,
+        swap_total_kb=8_388_608,
+        swap_free_kb=7_340_032,
+        sreclaimable_kb=64_000,
+        shmem_kb=128_000,
+        swap_cached_kb=12_000,
+    )
 
-    def test_observation_is_converted_to_typed_event(self) -> None:
-        observation = _observation()
+    return build_memory_observation(
+        stats,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+
+class HostObservationEventTests(unittest.TestCase):
+    """Tests for observation event adaptation and persistence."""
+
+    def test_host_observation_is_converted_to_typed_event(self) -> None:
+        observation = _host_observation()
 
         event = host_observation_to_event(observation)
 
@@ -113,8 +138,8 @@ class HostObservationEventTests(unittest.TestCase):
             62.16216216216216,
         )
 
-    def test_observation_event_is_persisted_through_event_bus(self) -> None:
-        observation = _observation()
+    def test_host_observation_event_is_persisted_through_event_bus(self) -> None:
+        observation = _host_observation()
         event = host_observation_to_event(observation)
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -152,6 +177,70 @@ class HostObservationEventTests(unittest.TestCase):
         self.assertIn(
             "cpu_utilization",
             payload["event"]["attributes"],
+        )
+
+    def test_memory_observation_is_converted_to_typed_event(self) -> None:
+        observation = _memory_observation()
+
+        event = memory_observation_to_event(observation)
+
+        self.assertIs(event.kind, EventKind.OBSERVATION)
+        self.assertEqual(event.source, MEMORY_OBSERVATION_SOURCE)
+        self.assertEqual(event.occurred_at, observation.captured_at)
+        self.assertEqual(
+            event.attributes["observation_type"],
+            MEMORY_OBSERVATION_TYPE,
+        )
+
+        utilization = event.attributes["memory_utilization"]
+
+        self.assertIsInstance(utilization, dict)
+
+        assert isinstance(utilization, dict)
+
+        self.assertAlmostEqual(
+            utilization["used_estimate_percent"],
+            50.0,
+        )
+
+    def test_memory_observation_event_is_persisted_through_event_bus(self) -> None:
+        observation = _memory_observation()
+        event = memory_observation_to_event(observation)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            recorder = JsonlEventRecorder(
+                directory=tmpdir,
+                instance_name="test-node",
+            )
+
+            bus = EventBus()
+            bus.subscribe(recorder)
+
+            report = bus.publish(event)
+
+            event_path = recorder.path
+            recorder.close()
+
+            lines = event_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(report.succeeded)
+        self.assertEqual(report.delivered, 1)
+        self.assertEqual(len(lines), 1)
+
+        payload = json.loads(lines[0])
+        attributes = payload["event"]["attributes"]
+
+        self.assertEqual(
+            attributes["observation_type"],
+            MEMORY_OBSERVATION_TYPE,
+        )
+        self.assertEqual(
+            attributes["memory_stats"]["unit"],
+            "kB",
+        )
+        self.assertEqual(
+            attributes["memory_utilization"]["used_estimate_kb"],
+            8_192_000,
         )
 
 

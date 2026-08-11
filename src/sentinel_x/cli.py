@@ -9,6 +9,7 @@ import time
 from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from dataclasses import replace
+from datetime import datetime, timezone
 from types import FrameType
 
 from sentinel_x import __version__
@@ -25,8 +26,11 @@ from sentinel_x.observability import (
     HostObservation,
     LinuxHostReader,
     LinuxObservationError,
+    MemoryObservation,
     build_host_observation,
+    build_memory_observation,
     host_observation_to_event,
+    memory_observation_to_event,
     validate_sample_interval,
 )
 from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
@@ -100,7 +104,7 @@ def _build_parser() -> ArgumentParser:
 
     observe_host_parser = subparsers.add_parser(
         "observe-host",
-        help="Collect one sampled Linux host CPU/load observation.",
+        help="Collect one sampled Linux host observation.",
     )
 
     _add_config_argument(observe_host_parser)
@@ -229,13 +233,13 @@ def _print_event(event: SentinelEvent) -> None:
 def _print_host_observation_summary(
     observation: HostObservation,
 ) -> None:
-    """Render a concise one-shot host observation summary."""
+    """Render a concise one-shot CPU/load observation summary."""
 
     cpu = observation.cpu_utilization
     load = observation.load_average
 
-    print("Sentinel-X host observation")
-    print("=" * 28)
+    print("Sentinel-X CPU/load observation")
+    print("=" * 31)
     print(f"Host: {observation.identity.hostname}")
     print(f"Logical CPUs: {observation.identity.logical_cpu_count}")
     print(f"Sample interval: {observation.sample_interval_seconds:.3f} seconds")
@@ -261,6 +265,26 @@ def _print_host_observation_summary(
             "CPU note: guest accounting exceeded its containing "
             "user/nice delta and was conservatively adjusted."
         )
+
+
+def _print_memory_observation_summary(
+    observation: MemoryObservation,
+) -> None:
+    """Render a concise one-shot memory observation summary."""
+
+    memory = observation.utilization
+
+    print()
+    print("Sentinel-X memory observation")
+    print("=" * 29)
+    print(f"Memory available: {memory.available_percent:.2f}%")
+    print(f"Memory used estimate: {memory.used_estimate_percent:.2f}%")
+
+    if memory.swap_used_percent is None:
+        print("Swap used: not configured")
+
+    else:
+        print(f"Swap used: {memory.swap_used_percent:.2f}%")
 
 
 def _run_observe_host(args: Namespace) -> int:
@@ -293,10 +317,18 @@ def _run_observe_host(args: Namespace) -> int:
         current = reader.read_snapshot()
         elapsed = time.monotonic() - monotonic_start
 
-        observation = build_host_observation(
+        memory_stats = reader.read_memory_stats()
+        memory_captured_at = datetime.now(timezone.utc)
+
+        host_observation = build_host_observation(
             previous,
             current,
             sample_interval_seconds=elapsed,
+        )
+
+        memory_observation = build_memory_observation(
+            memory_stats,
+            captured_at=memory_captured_at,
         )
 
     except KeyboardInterrupt:
@@ -346,19 +378,29 @@ def _run_observe_host(args: Namespace) -> int:
     else:
         print("Event store: disabled")
 
-    _print_host_observation_summary(observation)
+    _print_host_observation_summary(host_observation)
+    _print_memory_observation_summary(memory_observation)
 
-    event = host_observation_to_event(observation)
-    report = event_bus.publish(event)
+    host_event = host_observation_to_event(host_observation)
+    memory_event = memory_observation_to_event(memory_observation)
 
-    for failure in report.failures:
-        print(
-            "event delivery error: "
-            f"{failure.handler_name}: "
-            f"{failure.error_type}: "
-            f"{failure.error_message}",
-            file=sys.stderr,
-        )
+    host_report = event_bus.publish(host_event)
+    memory_report = event_bus.publish(memory_event)
+
+    reports = (
+        host_report,
+        memory_report,
+    )
+
+    for report in reports:
+        for failure in report.failures:
+            print(
+                "event delivery error: "
+                f"{failure.handler_name}: "
+                f"{failure.error_type}: "
+                f"{failure.error_message}",
+                file=sys.stderr,
+            )
 
     storage_failed = False
 
@@ -380,7 +422,7 @@ def _run_observe_host(args: Namespace) -> int:
     if storage_failed:
         return 3
 
-    if not report.succeeded:
+    if not all(report.succeeded for report in reports):
         return 1
 
     return 0

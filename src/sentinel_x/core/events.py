@@ -26,17 +26,24 @@ class EventSeverity(StrEnum):
 
 
 class EventKind(StrEnum):
-    """High-level event categories used by the Sentinel-X pipeline."""
+    """High-level event categories used by Sentinel-X."""
 
     AGENT_STARTED = "agent.started"
+    AGENT_STOP_REQUESTED = "agent.stop_requested"
     AGENT_STOPPED = "agent.stopped"
+    AGENT_FAILED = "agent.failed"
 
     OBSERVATION = "observation"
     ANOMALY = "anomaly"
     DIAGNOSIS = "diagnosis"
 
-    REMEDIATION_REQUESTED = "remediation.requested"
-    REMEDIATION_EXECUTED = "remediation.executed"
+    REMEDIATION_REQUESTED = (
+        "remediation.requested"
+    )
+
+    REMEDIATION_EXECUTED = (
+        "remediation.executed"
+    )
 
     VERIFICATION = "verification"
     SAFETY_BLOCK = "safety.block"
@@ -45,7 +52,9 @@ class EventKind(StrEnum):
 def _utc_now() -> datetime:
     """Return the current timezone-aware UTC timestamp."""
 
-    return datetime.now(timezone.utc)
+    return datetime.now(
+        timezone.utc
+    )
 
 
 @dataclass(
@@ -55,13 +64,14 @@ def _utc_now() -> datetime:
 class SentinelEvent:
     """Immutable event envelope used throughout Sentinel-X.
 
-    SentinelEvent is the common information unit exchanged between
-    collectors, detectors, diagnosis modules, remediation policies,
-    executors, and verification components.
+    SentinelEvent is the common information unit exchanged
+    between collectors, detectors, diagnosis modules,
+    remediation policies, executors, and verification
+    components.
 
-    Top-level attributes are copied into a read-only mapping during
-    construction to reduce accidental mutation after an event has
-    entered the Sentinel-X pipeline.
+    Top-level attributes are copied into a read-only mapping
+    during construction to reduce accidental mutation after an
+    event has entered the Sentinel-X pipeline.
     """
 
     kind: EventKind
@@ -70,14 +80,21 @@ class SentinelEvent:
 
     message: str
 
-    severity: EventSeverity = EventSeverity.INFO
+    severity: EventSeverity = (
+        EventSeverity.INFO
+    )
 
-    attributes: Mapping[str, Any] = field(
+    attributes: Mapping[
+        str,
+        Any,
+    ] = field(
         default_factory=dict,
     )
 
     event_id: str = field(
-        default_factory=lambda: str(uuid4()),
+        default_factory=lambda: str(
+            uuid4()
+        ),
     )
 
     occurred_at: datetime = field(
@@ -85,7 +102,7 @@ class SentinelEvent:
     )
 
     def __post_init__(self) -> None:
-        """Validate and normalize the event after construction."""
+        """Validate and normalize the event."""
 
         source = self.source.strip()
         message = self.message.strip()
@@ -102,7 +119,8 @@ class SentinelEvent:
 
         if (
             self.occurred_at.tzinfo is None
-            or self.occurred_at.utcoffset() is None
+            or self.occurred_at.utcoffset()
+            is None
         ):
             raise ValueError(
                 "occurred_at must be timezone-aware"
@@ -124,19 +142,27 @@ class SentinelEvent:
             self,
             "attributes",
             MappingProxyType(
-                dict(self.attributes)
+                dict(
+                    self.attributes
+                )
             ),
         )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Return a serialization-friendly event representation."""
+    def to_dict(
+        self,
+    ) -> dict[str, Any]:
+        """Return a serialization-friendly representation."""
 
         return {
             "event_id": self.event_id,
-            "occurred_at": self.occurred_at.isoformat(),
+            "occurred_at": (
+                self.occurred_at.isoformat()
+            ),
             "kind": self.kind.value,
             "severity": self.severity.value,
             "source": self.source,
             "message": self.message,
-            "attributes": dict(self.attributes),
+            "attributes": dict(
+                self.attributes
+            ),
         }

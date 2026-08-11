@@ -44,50 +44,25 @@ class JsonlEventRecorder:
         flush_on_write: bool = True,
     ) -> None:
         if not isinstance(instance_name, str):
-            raise TypeError(
-                "instance_name must be a string"
-            )
+            raise TypeError("instance_name must be a string")
 
-        normalized_instance_name = (
-            instance_name.strip()
-        )
+        normalized_instance_name = instance_name.strip()
 
         if not normalized_instance_name:
-            raise ValueError(
-                "instance_name must not be empty"
-            )
+            raise ValueError("instance_name must not be empty")
 
         if type(flush_on_write) is not bool:
-            raise TypeError(
-                "flush_on_write must be a boolean"
-            )
+            raise TypeError("flush_on_write must be a boolean")
 
-        self._directory = (
-            Path(directory).expanduser()
-        )
-
-        self._instance_name = (
-            normalized_instance_name
-        )
-
-        self._flush_on_write = (
-            flush_on_write
-        )
-
-        self._run_id = str(
-            uuid4()
-        )
-
+        self._directory = Path(directory).expanduser()
+        self._instance_name = normalized_instance_name
+        self._flush_on_write = flush_on_write
+        self._run_id = str(uuid4())
         self._lock = RLock()
-
         self._closed = False
-
         self._records_written = 0
-
         self._last_error: str | None = None
-
         self._path = self._build_output_path()
-
         self._file = self._open_event_file()
 
     @property
@@ -129,34 +104,20 @@ class JsonlEventRecorder:
     ) -> None:
         """Serialize and persist one SentinelEvent."""
 
-        if not isinstance(
-            event,
-            SentinelEvent,
-        ):
-            raise TypeError(
-                "record() requires a SentinelEvent"
-            )
+        if not isinstance(event, SentinelEvent):
+            raise TypeError("record() requires a SentinelEvent")
 
         with self._lock:
             if self._closed:
                 raise EventRecorderClosedError(
-                    "cannot record an event after "
-                    "the recorder has been closed"
+                    "cannot record an event after the recorder has been closed"
                 )
 
             envelope = {
-                "schema_version": (
-                    RECORD_SCHEMA_VERSION
-                ),
+                "schema_version": RECORD_SCHEMA_VERSION,
                 "run_id": self._run_id,
-                "instance_name": (
-                    self._instance_name
-                ),
-                "recorded_at": (
-                    datetime.now(
-                        timezone.utc
-                    ).isoformat()
-                ),
+                "instance_name": self._instance_name,
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "event": event.to_dict(),
             }
 
@@ -165,49 +126,33 @@ class JsonlEventRecorder:
                     envelope,
                     ensure_ascii=False,
                     sort_keys=True,
-                    separators=(
-                        ",",
-                        ":",
-                    ),
+                    separators=(",", ":"),
                     default=_json_default,
                 )
 
-            except (
-                TypeError,
-                ValueError,
-            ) as exc:
-                self._last_error = (
-                    f"{type(exc).__name__}: {exc}"
-                )
+            except (TypeError, ValueError) as exc:
+                self._last_error = f"{type(exc).__name__}: {exc}"
 
                 raise EventSerializationError(
-                    "could not serialize Sentinel-X event "
-                    f"{event.event_id}: {exc}"
+                    f"could not serialize Sentinel-X event {event.event_id}: {exc}"
                 ) from exc
 
             line = serialized + "\n"
 
             try:
-                written = self._file.write(
-                    line
-                )
+                written = self._file.write(line)
 
                 if written != len(line):
-                    raise OSError(
-                        "partial event-record write"
-                    )
+                    raise OSError("partial event-record write")
 
                 if self._flush_on_write:
                     self._file.flush()
 
             except OSError as exc:
-                self._last_error = (
-                    f"{type(exc).__name__}: {exc}"
-                )
+                self._last_error = f"{type(exc).__name__}: {exc}"
 
                 raise EventRecorderError(
-                    "failed to write Sentinel-X event "
-                    f"{event.event_id}: {exc}"
+                    f"failed to write Sentinel-X event {event.event_id}: {exc}"
                 ) from exc
 
             self._records_written += 1
@@ -226,33 +171,24 @@ class JsonlEventRecorder:
 
             try:
                 self._file.flush()
-
-                os.fsync(
-                    self._file.fileno()
-                )
+                os.fsync(self._file.fileno())
 
             except OSError as exc:
-                self._last_error = (
-                    f"{type(exc).__name__}: {exc}"
-                )
+                self._last_error = f"{type(exc).__name__}: {exc}"
 
                 failure = EventRecorderError(
-                    "failed to synchronize Sentinel-X "
-                    f"event file {self._path}: {exc}"
+                    f"failed to synchronize Sentinel-X event file {self._path}: {exc}"
                 )
 
             try:
                 self._file.close()
 
             except OSError as exc:
-                self._last_error = (
-                    f"{type(exc).__name__}: {exc}"
-                )
+                self._last_error = f"{type(exc).__name__}: {exc}"
 
                 if failure is None:
                     failure = EventRecorderError(
-                        "failed to close Sentinel-X "
-                        f"event file {self._path}: {exc}"
+                        f"failed to close Sentinel-X event file {self._path}: {exc}"
                     )
 
             self._closed = True
@@ -266,13 +202,9 @@ class JsonlEventRecorder:
     ) -> None:
         """Allow the recorder to be used directly as an EventBus handler."""
 
-        self.record(
-            event
-        )
+        self.record(event)
 
-    def __enter__(
-        self,
-    ) -> JsonlEventRecorder:
+    def __enter__(self) -> JsonlEventRecorder:
         """Return this recorder for context-manager usage."""
 
         return self
@@ -287,9 +219,7 @@ class JsonlEventRecorder:
 
         self.close()
 
-    def _build_output_path(
-        self,
-    ) -> Path:
+    def _build_output_path(self) -> Path:
         """Create the output directory and choose a unique file path."""
 
         try:
@@ -301,41 +231,26 @@ class JsonlEventRecorder:
 
         except OSError as exc:
             raise EventRecorderError(
-                "could not create Sentinel-X event "
-                f"directory {self._directory}: {exc}"
+                f"could not create Sentinel-X event directory {self._directory}: {exc}"
             ) from exc
 
         if not self._directory.is_dir():
             raise EventRecorderError(
-                "Sentinel-X event storage path is "
-                f"not a directory: {self._directory}"
+                f"Sentinel-X event storage path is not a directory: {self._directory}"
             )
 
-        timestamp = datetime.now(
-            timezone.utc
-        ).strftime(
-            "%Y%m%dT%H%M%S.%fZ"
-        )
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
 
         filename = (
-            f"{self._instance_name}-"
-            f"{timestamp}-"
-            f"pid{os.getpid()}-"
-            f"{self._run_id}.jsonl"
+            f"{self._instance_name}-{timestamp}-pid{os.getpid()}-{self._run_id}.jsonl"
         )
 
         return self._directory / filename
 
-    def _open_event_file(
-        self,
-    ) -> TextIO:
+    def _open_event_file(self) -> TextIO:
         """Open the run file exclusively with private permissions."""
 
-        flags = (
-            os.O_WRONLY
-            | os.O_CREAT
-            | os.O_EXCL
-        )
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
 
         try:
             file_descriptor = os.open(
@@ -346,8 +261,7 @@ class JsonlEventRecorder:
 
         except OSError as exc:
             raise EventRecorderError(
-                "could not create Sentinel-X "
-                f"event file {self._path}: {exc}"
+                f"could not create Sentinel-X event file {self._path}: {exc}"
             ) from exc
 
         try:
@@ -359,36 +273,20 @@ class JsonlEventRecorder:
             )
 
         except Exception:
-            os.close(
-                file_descriptor
-            )
+            os.close(file_descriptor)
             raise
 
 
-def _json_default(
-    value: Any,
-) -> Any:
+def _json_default(value: Any) -> Any:
     """Serialize explicitly supported structured attribute types."""
 
-    if isinstance(
-        value,
-        datetime,
-    ):
+    if isinstance(value, datetime):
         return value.isoformat()
 
-    if isinstance(
-        value,
-        Path,
-    ):
+    if isinstance(value, Path):
         return str(value)
 
-    if isinstance(
-        value,
-        Enum,
-    ):
+    if isinstance(value, Enum):
         return value.value
 
-    raise TypeError(
-        "unsupported event attribute type: "
-        f"{type(value).__name__}"
-    )
+    raise TypeError(f"unsupported event attribute type: {type(value).__name__}")

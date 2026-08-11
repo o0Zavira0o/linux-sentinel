@@ -18,23 +18,14 @@ from sentinel_x.config import (
     SentinelConfig,
     load_config,
 )
-from sentinel_x.core import (
-    EventBus,
-    SentinelEngine,
-    SentinelEvent,
-)
-from sentinel_x.storage import (
-    EventRecorderError,
-    JsonlEventRecorder,
-)
+from sentinel_x.core import EventBus, SentinelEngine, SentinelEvent
+from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
 
 
 _MINIMUM_PYTHON = (3, 11)
 
 
-def _add_config_argument(
-    parser: ArgumentParser,
-) -> None:
+def _add_config_argument(parser: ArgumentParser) -> None:
     """Add the common configuration-file argument."""
 
     parser.add_argument(
@@ -67,50 +58,34 @@ def _build_parser() -> ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
 
-    subparsers = parser.add_subparsers(
-        dest="command"
-    )
+    subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser(
         "doctor",
         help=(
-            "Check whether the local runtime is suitable "
-            "for Sentinel-X development."
+            "Check whether the local runtime is suitable for Sentinel-X development."
         ),
     )
 
-    config_check_parser = (
-        subparsers.add_parser(
-            "config-check",
-            help=(
-                "Load and validate Sentinel-X "
-                "configuration without starting the agent."
-            ),
-        )
+    config_check_parser = subparsers.add_parser(
+        "config-check",
+        help=("Load and validate Sentinel-X configuration without starting the agent."),
     )
 
-    _add_config_argument(
-        config_check_parser
-    )
+    _add_config_argument(config_check_parser)
 
     run_parser = subparsers.add_parser(
         "run",
-        help=(
-            "Run the Phase-0 Sentinel-X core engine."
-        ),
+        help="Run the Phase-0 Sentinel-X core engine.",
     )
 
-    _add_config_argument(
-        run_parser
-    )
+    _add_config_argument(run_parser)
 
     run_parser.add_argument(
         "--tick-interval",
         type=float,
         default=None,
-        help=(
-            "Override agent.tick_interval for this run only."
-        ),
+        help="Override agent.tick_interval for this run only.",
     )
 
     return parser
@@ -119,14 +94,8 @@ def _build_parser() -> ArgumentParser:
 def _run_doctor() -> int:
     """Check minimum local requirements for Sentinel-X."""
 
-    is_linux = sys.platform.startswith(
-        "linux"
-    )
-
-    python_ok = (
-        sys.version_info
-        >= _MINIMUM_PYTHON
-    )
+    is_linux = sys.platform.startswith("linux")
+    python_ok = sys.version_info >= _MINIMUM_PYTHON
 
     checks = (
         (
@@ -141,45 +110,21 @@ def _run_doctor() -> int:
         ),
     )
 
-    print(
-        "Sentinel-X environment check"
-    )
-
-    print(
-        "=" * 28
-    )
+    print("Sentinel-X environment check")
+    print("=" * 28)
 
     all_ok = True
 
-    for (
-        name,
-        passed,
-        detail,
-    ) in checks:
-        status = (
-            "PASS"
-            if passed
-            else "FAIL"
-        )
+    for name, passed, detail in checks:
+        status = "PASS" if passed else "FAIL"
 
-        print(
-            f"[{status}] "
-            f"{name}: "
-            f"{detail}"
-        )
+        print(f"[{status}] {name}: {detail}")
 
-        all_ok = (
-            all_ok
-            and passed
-        )
+        all_ok = all_ok and passed
 
     if all_ok:
         print()
-
-        print(
-            "Environment baseline is ready."
-        )
-
+        print("Environment baseline is ready.")
         return 0
 
     print(
@@ -196,9 +141,7 @@ def _load_configuration(
     """Load configuration and render operator-facing errors."""
 
     try:
-        return load_config(
-            config_path
-        )
+        return load_config(config_path)
 
     except ConfigError as exc:
         print(
@@ -229,84 +172,39 @@ def _apply_run_overrides(
     )
 
 
-def _run_config_check(
-    args: Namespace,
-) -> int:
+def _run_config_check(args: Namespace) -> int:
     """Validate configuration without starting Sentinel-X."""
 
-    loaded = _load_configuration(
-        args.config
-    )
+    loaded = _load_configuration(args.config)
 
     if loaded is None:
         return 2
 
     config = loaded.config
 
-    print(
-        "Sentinel-X configuration check"
-    )
-
-    print(
-        "=" * 30
-    )
-
-    print(
-        f"Source: {loaded.source_label}"
-    )
-
-    print(
-        "Status: VALID"
-    )
-
-    print(
-        "Agent instance: "
-        f"{config.agent.instance_name}"
-    )
-
-    print(
-        "Tick interval: "
-        f"{config.agent.tick_interval:.3f} seconds"
-    )
-
-    print(
-        "Event storage: "
-        f"{'enabled' if config.storage.enabled else 'disabled'}"
-    )
-
-    print(
-        "Storage directory: "
-        f"{loaded.resolve_path(config.storage.directory)}"
-    )
-
-    print(
-        "Flush on write: "
-        f"{config.storage.flush_on_write}"
-    )
+    print("Sentinel-X configuration check")
+    print("=" * 30)
+    print(f"Source: {loaded.source_label}")
+    print("Status: VALID")
+    print(f"Agent instance: {config.agent.instance_name}")
+    print(f"Tick interval: {config.agent.tick_interval:.3f} seconds")
+    print(f"Event storage: {'enabled' if config.storage.enabled else 'disabled'}")
+    print(f"Storage directory: {loaded.resolve_path(config.storage.directory)}")
+    print(f"Flush on write: {config.storage.flush_on_write}")
 
     return 0
 
 
-def _print_event(
-    event: SentinelEvent,
-) -> None:
+def _print_event(event: SentinelEvent) -> None:
     """Render a concise event during Phase-0 development."""
 
-    print(
-        f"[{event.severity.value.upper()}] "
-        f"{event.kind.value}: "
-        f"{event.message}"
-    )
+    print(f"[{event.severity.value.upper()}] {event.kind.value}: {event.message}")
 
 
-def _run_engine(
-    args: Namespace,
-) -> int:
+def _run_engine(args: Namespace) -> int:
     """Create and run the Phase-0 Sentinel-X engine."""
 
-    loaded = _load_configuration(
-        args.config
-    )
+    loaded = _load_configuration(args.config)
 
     if loaded is None:
         return 2
@@ -319,79 +217,49 @@ def _run_engine(
 
     except ConfigValidationError as exc:
         print(
-            "configuration error: "
-            f"invalid CLI override: {exc}",
+            f"configuration error: invalid CLI override: {exc}",
             file=sys.stderr,
         )
 
         return 2
 
-    print(
-        f"Configuration: {loaded.source_label}"
-    )
-
-    print(
-        "Agent instance: "
-        f"{config.agent.instance_name}"
-    )
+    print(f"Configuration: {loaded.source_label}")
+    print(f"Agent instance: {config.agent.instance_name}")
 
     event_bus = EventBus()
-
-    event_bus.subscribe(
-        _print_event
-    )
+    event_bus.subscribe(_print_event)
 
     recorder: JsonlEventRecorder | None = None
 
     if config.storage.enabled:
-        storage_directory = (
-            loaded.resolve_path(
-                config.storage.directory
-            )
-        )
+        storage_directory = loaded.resolve_path(config.storage.directory)
 
         try:
             recorder = JsonlEventRecorder(
                 directory=storage_directory,
-                instance_name=(
-                    config.agent.instance_name
-                ),
-                flush_on_write=(
-                    config.storage.flush_on_write
-                ),
+                instance_name=config.agent.instance_name,
+                flush_on_write=config.storage.flush_on_write,
             )
 
         except EventRecorderError as exc:
             print(
-                "storage error: "
-                f"{exc}",
+                f"storage error: {exc}",
                 file=sys.stderr,
             )
 
             return 3
 
-        event_bus.subscribe(
-            recorder
-        )
+        event_bus.subscribe(recorder)
 
-        print(
-            f"Run ID: {recorder.run_id}"
-        )
-
-        print(
-            f"Event store: {recorder.path}"
-        )
+        print(f"Run ID: {recorder.run_id}")
+        print(f"Event store: {recorder.path}")
 
     else:
-        print(
-            "Event store: disabled"
-        )
+        print("Event store: disabled")
 
     engine = SentinelEngine(
         event_bus=event_bus,
-        instance_name=(
-            config.agent.instance_name
-        ),
+        instance_name=config.agent.instance_name,
     )
 
     def handle_shutdown_signal(
@@ -401,32 +269,15 @@ def _run_engine(
         """Convert OS signals into graceful stop requests."""
 
         try:
-            signal_name = signal.Signals(
-                signum
-            ).name
+            signal_name = signal.Signals(signum).name
 
         except ValueError:
-            signal_name = str(
-                signum
-            )
+            signal_name = str(signum)
 
-        engine.request_stop(
-            reason=(
-                f"received {signal_name}"
-            )
-        )
+        engine.request_stop(reason=f"received {signal_name}")
 
-    previous_sigint = (
-        signal.getsignal(
-            signal.SIGINT
-        )
-    )
-
-    previous_sigterm = (
-        signal.getsignal(
-            signal.SIGTERM
-        )
-    )
+    previous_sigint = signal.getsignal(signal.SIGINT)
+    previous_sigterm = signal.getsignal(signal.SIGTERM)
 
     signal.signal(
         signal.SIGINT,
@@ -441,16 +292,10 @@ def _run_engine(
     storage_failed = False
 
     try:
-        engine.run_forever(
-            tick_interval=(
-                config.agent.tick_interval
-            )
-        )
+        engine.run_forever(tick_interval=config.agent.tick_interval)
 
     except KeyboardInterrupt:
-        engine.request_stop(
-            reason="keyboard interrupt"
-        )
+        engine.request_stop(reason="keyboard interrupt")
 
         engine.stop()
 
@@ -468,8 +313,7 @@ def _run_engine(
         if recorder is not None:
             if recorder.last_error is not None:
                 print(
-                    "storage error occurred during runtime: "
-                    f"{recorder.last_error}",
+                    f"storage error occurred during runtime: {recorder.last_error}",
                     file=sys.stderr,
                 )
 
@@ -480,8 +324,7 @@ def _run_engine(
 
             except EventRecorderError as exc:
                 print(
-                    "storage error during shutdown: "
-                    f"{exc}",
+                    f"storage error during shutdown: {exc}",
                     file=sys.stderr,
                 )
 
@@ -499,23 +342,16 @@ def main(
     """Run the Sentinel-X command-line interface."""
 
     parser = _build_parser()
-
-    args = parser.parse_args(
-        argv
-    )
+    args = parser.parse_args(argv)
 
     if args.command == "doctor":
         return _run_doctor()
 
     if args.command == "config-check":
-        return _run_config_check(
-            args
-        )
+        return _run_config_check(args)
 
     if args.command == "run":
-        return _run_engine(
-            args
-        )
+        return _run_engine(args)
 
     parser.print_help()
 

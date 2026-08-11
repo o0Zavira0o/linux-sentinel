@@ -7,26 +7,19 @@ import stat
 import tempfile
 import unittest
 
-from sentinel_x.core import (
-    EventKind,
-    SentinelEvent,
-)
+from sentinel_x.core import EventKind, SentinelEvent
 from sentinel_x.storage import (
+    RECORD_SCHEMA_VERSION,
     EventRecorderClosedError,
     EventSerializationError,
     JsonlEventRecorder,
-    RECORD_SCHEMA_VERSION,
 )
 
 
-class JsonlEventRecorderTests(
-    unittest.TestCase
-):
+class JsonlEventRecorderTests(unittest.TestCase):
     """Tests for durable Sentinel-X event recording."""
 
-    def test_event_is_written_as_structured_jsonl(
-        self,
-    ) -> None:
+    def test_event_is_written_as_structured_jsonl(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             recorder = JsonlEventRecorder(
                 directory=tmpdir,
@@ -42,27 +35,21 @@ class JsonlEventRecorderTests(
                 },
             )
 
-            recorder.record(
-                event
-            )
+            recorder.record(event)
 
             event_path = recorder.path
             run_id = recorder.run_id
 
             recorder.close()
 
-            lines = event_path.read_text(
-                encoding="utf-8"
-            ).splitlines()
+            lines = event_path.read_text(encoding="utf-8").splitlines()
 
         self.assertEqual(
             len(lines),
             1,
         )
 
-        payload = json.loads(
-            lines[0]
-        )
+        payload = json.loads(lines[0])
 
         self.assertEqual(
             payload["schema_version"],
@@ -94,9 +81,7 @@ class JsonlEventRecorderTests(
             12.5,
         )
 
-    def test_multiple_events_create_multiple_lines(
-        self,
-    ) -> None:
+    def test_multiple_events_create_multiple_lines(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             recorder = JsonlEventRecorder(
                 directory=tmpdir,
@@ -115,13 +100,8 @@ class JsonlEventRecorderTests(
                 message="second",
             )
 
-            recorder.record(
-                first
-            )
-
-            recorder.record(
-                second
-            )
+            recorder.record(first)
+            recorder.record(second)
 
             event_path = recorder.path
 
@@ -132,22 +112,15 @@ class JsonlEventRecorderTests(
 
             recorder.close()
 
-            lines = event_path.read_text(
-                encoding="utf-8"
-            ).splitlines()
+            lines = event_path.read_text(encoding="utf-8").splitlines()
 
         self.assertEqual(
             len(lines),
             2,
         )
 
-        first_payload = json.loads(
-            lines[0]
-        )
-
-        second_payload = json.loads(
-            lines[1]
-        )
+        first_payload = json.loads(lines[0])
+        second_payload = json.loads(lines[1])
 
         self.assertEqual(
             first_payload["run_id"],
@@ -164,18 +137,14 @@ class JsonlEventRecorderTests(
             "second",
         )
 
-    def test_event_file_uses_private_permissions(
-        self,
-    ) -> None:
+    def test_event_file_uses_private_permissions(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             recorder = JsonlEventRecorder(
                 directory=tmpdir,
                 instance_name="test-node",
             )
 
-            mode = stat.S_IMODE(
-                recorder.path.stat().st_mode
-            )
+            mode = stat.S_IMODE(recorder.path.stat().st_mode)
 
             recorder.close()
 
@@ -184,9 +153,7 @@ class JsonlEventRecorderTests(
             0o600,
         )
 
-    def test_record_after_close_is_rejected(
-        self,
-    ) -> None:
+    def test_record_after_close_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             recorder = JsonlEventRecorder(
                 directory=tmpdir,
@@ -201,16 +168,10 @@ class JsonlEventRecorderTests(
                 message="sample",
             )
 
-            with self.assertRaises(
-                EventRecorderClosedError
-            ):
-                recorder.record(
-                    event
-                )
+            with self.assertRaises(EventRecorderClosedError):
+                recorder.record(event)
 
-    def test_unserializable_attribute_is_rejected_before_write(
-        self,
-    ) -> None:
+    def test_unserializable_attribute_is_rejected_before_write(self) -> None:
         class UnsupportedObject:
             pass
 
@@ -229,12 +190,8 @@ class JsonlEventRecorderTests(
                 },
             )
 
-            with self.assertRaises(
-                EventSerializationError
-            ):
-                recorder.record(
-                    event
-                )
+            with self.assertRaises(EventSerializationError):
+                recorder.record(event)
 
             event_path = recorder.path
 
@@ -245,9 +202,7 @@ class JsonlEventRecorderTests(
 
             recorder.close()
 
-            content = event_path.read_text(
-                encoding="utf-8"
-            )
+            content = event_path.read_text(encoding="utf-8")
 
         self.assertEqual(
             content,

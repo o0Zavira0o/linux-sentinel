@@ -37,13 +37,8 @@ class EventKind(StrEnum):
     ANOMALY = "anomaly"
     DIAGNOSIS = "diagnosis"
 
-    REMEDIATION_REQUESTED = (
-        "remediation.requested"
-    )
-
-    REMEDIATION_EXECUTED = (
-        "remediation.executed"
-    )
+    REMEDIATION_REQUESTED = "remediation.requested"
+    REMEDIATION_EXECUTED = "remediation.executed"
 
     VERIFICATION = "verification"
     SAFETY_BLOCK = "safety.block"
@@ -52,9 +47,7 @@ class EventKind(StrEnum):
 def _utc_now() -> datetime:
     """Return the current timezone-aware UTC timestamp."""
 
-    return datetime.now(
-        timezone.utc
-    )
+    return datetime.now(timezone.utc)
 
 
 @dataclass(
@@ -75,31 +68,15 @@ class SentinelEvent:
     """
 
     kind: EventKind
-
     source: str
-
     message: str
+    severity: EventSeverity = EventSeverity.INFO
 
-    severity: EventSeverity = (
-        EventSeverity.INFO
-    )
+    attributes: Mapping[str, Any] = field(default_factory=dict)
 
-    attributes: Mapping[
-        str,
-        Any,
-    ] = field(
-        default_factory=dict,
-    )
+    event_id: str = field(default_factory=lambda: str(uuid4()))
 
-    event_id: str = field(
-        default_factory=lambda: str(
-            uuid4()
-        ),
-    )
-
-    occurred_at: datetime = field(
-        default_factory=_utc_now,
-    )
+    occurred_at: datetime = field(default_factory=_utc_now)
 
     def __post_init__(self) -> None:
         """Validate and normalize the event."""
@@ -108,23 +85,13 @@ class SentinelEvent:
         message = self.message.strip()
 
         if not source:
-            raise ValueError(
-                "event source must not be empty"
-            )
+            raise ValueError("event source must not be empty")
 
         if not message:
-            raise ValueError(
-                "event message must not be empty"
-            )
+            raise ValueError("event message must not be empty")
 
-        if (
-            self.occurred_at.tzinfo is None
-            or self.occurred_at.utcoffset()
-            is None
-        ):
-            raise ValueError(
-                "occurred_at must be timezone-aware"
-            )
+        if self.occurred_at.tzinfo is None or self.occurred_at.utcoffset() is None:
+            raise ValueError("occurred_at must be timezone-aware")
 
         object.__setattr__(
             self,
@@ -141,28 +108,18 @@ class SentinelEvent:
         object.__setattr__(
             self,
             "attributes",
-            MappingProxyType(
-                dict(
-                    self.attributes
-                )
-            ),
+            MappingProxyType(dict(self.attributes)),
         )
 
-    def to_dict(
-        self,
-    ) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serialization-friendly representation."""
 
         return {
             "event_id": self.event_id,
-            "occurred_at": (
-                self.occurred_at.isoformat()
-            ),
+            "occurred_at": self.occurred_at.isoformat(),
             "kind": self.kind.value,
             "severity": self.severity.value,
             "source": self.source,
             "message": self.message,
-            "attributes": dict(
-                self.attributes
-            ),
+            "attributes": dict(self.attributes),
         }

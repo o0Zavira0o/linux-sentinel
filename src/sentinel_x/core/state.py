@@ -22,9 +22,7 @@ class InvalidStateTransitionError(RuntimeError):
     """Raised when an invalid agent lifecycle transition is requested."""
 
 
-_ALLOWED_TRANSITIONS: Final[
-    dict[AgentState, frozenset[AgentState]]
-] = {
+_ALLOWED_TRANSITIONS: Final[dict[AgentState, frozenset[AgentState]]] = {
     AgentState.CREATED: frozenset(
         {
             AgentState.STARTING,
@@ -82,10 +80,7 @@ class AgentLifecycle:
         """Return whether the current state may transition to target."""
 
         with self._lock:
-            return (
-                target
-                in _ALLOWED_TRANSITIONS[self._state]
-            )
+            return target in _ALLOWED_TRANSITIONS[self._state]
 
     def transition(
         self,
@@ -100,10 +95,7 @@ class AgentLifecycle:
         with self._lock:
             previous = self._state
 
-            if (
-                target
-                not in _ALLOWED_TRANSITIONS[previous]
-            ):
+            if target not in _ALLOWED_TRANSITIONS[previous]:
                 raise InvalidStateTransitionError(
                     "invalid Sentinel-X state transition: "
                     f"{previous.value} -> {target.value}"

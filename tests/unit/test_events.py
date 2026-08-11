@@ -5,10 +5,7 @@ from __future__ import annotations
 import unittest
 from datetime import datetime
 
-from sentinel_x.core.events import (
-    EventKind,
-    SentinelEvent,
-)
+from sentinel_x.core.events import EventKind, SentinelEvent
 
 
 class SentinelEventTests(unittest.TestCase):
@@ -26,33 +23,14 @@ class SentinelEventTests(unittest.TestCase):
 
         payload = event.to_dict()
 
-        self.assertEqual(
-            event.source,
-            "unit-test",
-        )
+        self.assertEqual(event.source, "unit-test")
+        self.assertEqual(event.message, "CPU sample collected")
+        self.assertEqual(payload["kind"], "observation")
+        self.assertEqual(payload["attributes"]["cpu_percent"], 12.5)
 
-        self.assertEqual(
-            event.message,
-            "CPU sample collected",
-        )
+        timestamp = datetime.fromisoformat(payload["occurred_at"])
 
-        self.assertEqual(
-            payload["kind"],
-            "observation",
-        )
-
-        self.assertEqual(
-            payload["attributes"]["cpu_percent"],
-            12.5,
-        )
-
-        timestamp = datetime.fromisoformat(
-            payload["occurred_at"]
-        )
-
-        self.assertIsNotNone(
-            timestamp.tzinfo
-        )
+        self.assertIsNotNone(timestamp.tzinfo)
 
     def test_event_rejects_empty_source(self) -> None:
         with self.assertRaises(ValueError):

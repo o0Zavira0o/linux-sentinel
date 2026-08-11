@@ -6,10 +6,7 @@ from dataclasses import dataclass
 from threading import Event, Lock, RLock
 from typing import Final
 
-from sentinel_x.core.bus import (
-    EventBus,
-    PublishReport,
-)
+from sentinel_x.core.bus import EventBus, PublishReport
 from sentinel_x.core.events import (
     EventKind,
     EventSeverity,
@@ -22,9 +19,7 @@ from sentinel_x.core.state import (
 )
 
 
-class EngineRunConflictError(
-    RuntimeError
-):
+class EngineRunConflictError(RuntimeError):
     """Raised when the same engine is run concurrently."""
 
 
@@ -52,9 +47,7 @@ class SentinelEngine:
     the lifecycle contract established here.
     """
 
-    SOURCE: Final[str] = (
-        "sentinel_x.core.engine"
-    )
+    SOURCE: Final[str] = "sentinel_x.core.engine"
 
     def __init__(
         self,
@@ -62,42 +55,21 @@ class SentinelEngine:
         *,
         instance_name: str = "sentinel-x",
     ) -> None:
-        if not isinstance(
-            instance_name,
-            str,
-        ):
-            raise TypeError(
-                "instance_name must be a string"
-            )
+        if not isinstance(instance_name, str):
+            raise TypeError("instance_name must be a string")
 
-        normalized_instance_name = (
-            instance_name.strip()
-        )
+        normalized_instance_name = instance_name.strip()
 
         if not normalized_instance_name:
-            raise ValueError(
-                "instance_name must not be empty"
-            )
+            raise ValueError("instance_name must not be empty")
 
         self._event_bus = event_bus
-
-        self._instance_name = (
-            normalized_instance_name
-        )
-
-        self._lifecycle = (
-            AgentLifecycle()
-        )
-
+        self._instance_name = normalized_instance_name
+        self._lifecycle = AgentLifecycle()
         self._stop_event = Event()
-
         self._run_lock = Lock()
-
         self._control_lock = RLock()
-
-        self._stop_reason: str | None = (
-            None
-        )
+        self._stop_reason: str | None = None
 
     @property
     def state(self) -> AgentState:
@@ -111,36 +83,24 @@ class SentinelEngine:
 
         return self._instance_name
 
-    def snapshot(
-        self,
-    ) -> EngineSnapshot:
+    def snapshot(self) -> EngineSnapshot:
         """Return a thread-safe control-state snapshot."""
 
         with self._control_lock:
             return EngineSnapshot(
-                instance_name=(
-                    self._instance_name
-                ),
+                instance_name=self._instance_name,
                 state=self._lifecycle.state,
-                stop_requested=(
-                    self._stop_event.is_set()
-                ),
-                stop_reason=(
-                    self._stop_reason
-                ),
+                stop_requested=self._stop_event.is_set(),
+                stop_reason=self._stop_reason,
             )
 
     def start(self) -> None:
         """Transition engine from CREATED to RUNNING."""
 
-        self._lifecycle.transition(
-            AgentState.STARTING
-        )
+        self._lifecycle.transition(AgentState.STARTING)
 
         try:
-            self._lifecycle.transition(
-                AgentState.RUNNING
-            )
+            self._lifecycle.transition(AgentState.RUNNING)
 
         except Exception:
             self._transition_to_failed()
@@ -148,21 +108,12 @@ class SentinelEngine:
 
         self._publish(
             SentinelEvent(
-                kind=(
-                    EventKind.AGENT_STARTED
-                ),
+                kind=EventKind.AGENT_STARTED,
                 source=self.SOURCE,
-                message=(
-                    "Sentinel-X engine entered "
-                    "the running state."
-                ),
+                message=("Sentinel-X engine entered the running state."),
                 attributes={
-                    "instance_name": (
-                        self._instance_name
-                    ),
-                    "state": (
-                        AgentState.RUNNING.value
-                    ),
+                    "instance_name": self._instance_name,
+                    "state": AgentState.RUNNING.value,
                 },
             )
         )
@@ -182,39 +133,26 @@ class SentinelEngine:
         Repeated requests are idempotent and return False.
         """
 
-        normalized_reason = (
-            reason.strip()
-        )
+        normalized_reason = reason.strip()
 
         if not normalized_reason:
-            raise ValueError(
-                "stop reason must not be empty"
-            )
+            raise ValueError("stop reason must not be empty")
 
         with self._control_lock:
             if self._stop_event.is_set():
                 return False
 
-            self._stop_reason = (
-                normalized_reason
-            )
-
+            self._stop_reason = normalized_reason
             self._stop_event.set()
 
         self._publish(
             SentinelEvent(
-                kind=(
-                    EventKind.AGENT_STOP_REQUESTED
-                ),
+                kind=EventKind.AGENT_STOP_REQUESTED,
                 source=self.SOURCE,
-                message=(
-                    "Graceful shutdown requested."
-                ),
+                message="Graceful shutdown requested.",
                 severity=EventSeverity.INFO,
                 attributes={
-                    "instance_name": (
-                        self._instance_name
-                    ),
+                    "instance_name": self._instance_name,
                     "reason": normalized_reason,
                 },
             )
@@ -230,25 +168,15 @@ class SentinelEngine:
 
         with self._control_lock:
             if reason is not None:
-                normalized_reason = (
-                    reason.strip()
-                )
+                normalized_reason = reason.strip()
 
                 if not normalized_reason:
-                    raise ValueError(
-                        "stop reason must not "
-                        "be empty"
-                    )
+                    raise ValueError("stop reason must not be empty")
 
                 if self._stop_reason is None:
-                    self._stop_reason = (
-                        normalized_reason
-                    )
+                    self._stop_reason = normalized_reason
 
-            effective_reason = (
-                self._stop_reason
-                or "engine stop requested"
-            )
+            effective_reason = self._stop_reason or "engine stop requested"
 
         current = self._lifecycle.state
 
@@ -256,9 +184,7 @@ class SentinelEngine:
             return
 
         if current is AgentState.CREATED:
-            self._lifecycle.transition(
-                AgentState.STOPPED
-            )
+            self._lifecycle.transition(AgentState.STOPPED)
 
         else:
             if current in {
@@ -266,37 +192,20 @@ class SentinelEngine:
                 AgentState.RUNNING,
                 AgentState.FAILED,
             }:
-                self._lifecycle.transition(
-                    AgentState.STOPPING
-                )
+                self._lifecycle.transition(AgentState.STOPPING)
 
-            if (
-                self._lifecycle.state
-                is AgentState.STOPPING
-            ):
-                self._lifecycle.transition(
-                    AgentState.STOPPED
-                )
+            if self._lifecycle.state is AgentState.STOPPING:
+                self._lifecycle.transition(AgentState.STOPPED)
 
         self._publish(
             SentinelEvent(
-                kind=(
-                    EventKind.AGENT_STOPPED
-                ),
+                kind=EventKind.AGENT_STOPPED,
                 source=self.SOURCE,
-                message=(
-                    "Sentinel-X engine stopped."
-                ),
+                message="Sentinel-X engine stopped.",
                 attributes={
-                    "instance_name": (
-                        self._instance_name
-                    ),
-                    "state": (
-                        AgentState.STOPPED.value
-                    ),
-                    "reason": (
-                        effective_reason
-                    ),
+                    "instance_name": self._instance_name,
+                    "state": AgentState.STOPPED.value,
+                    "reason": effective_reason,
                 },
             )
         )
@@ -316,25 +225,17 @@ class SentinelEngine:
         """
 
         if tick_interval <= 0:
-            raise ValueError(
-                "tick_interval must be "
-                "greater than zero"
-            )
+            raise ValueError("tick_interval must be greater than zero")
 
-        if not self._run_lock.acquire(
-            blocking=False
-        ):
+        if not self._run_lock.acquire(blocking=False):
             raise EngineRunConflictError(
-                "this SentinelEngine instance "
-                "is already running"
+                "this SentinelEngine instance is already running"
             )
 
         try:
             self.start()
 
-            while not self._stop_event.wait(
-                timeout=tick_interval
-            ):
+            while not self._stop_event.wait(timeout=tick_interval):
                 self._tick()
 
         except Exception as exc:
@@ -342,26 +243,14 @@ class SentinelEngine:
 
             self._publish(
                 SentinelEvent(
-                    kind=(
-                        EventKind.AGENT_FAILED
-                    ),
+                    kind=EventKind.AGENT_FAILED,
                     source=self.SOURCE,
-                    message=(
-                        "Sentinel-X engine failed."
-                    ),
-                    severity=(
-                        EventSeverity.CRITICAL
-                    ),
+                    message="Sentinel-X engine failed.",
+                    severity=EventSeverity.CRITICAL,
                     attributes={
-                        "instance_name": (
-                            self._instance_name
-                        ),
-                        "error_type": (
-                            type(exc).__name__
-                        ),
-                        "error_message": (
-                            str(exc)
-                        ),
+                        "instance_name": self._instance_name,
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
                     },
                 )
             )
@@ -369,10 +258,7 @@ class SentinelEngine:
             raise
 
         finally:
-            if (
-                self._lifecycle.state
-                is not AgentState.STOPPED
-            ):
+            if self._lifecycle.state is not AgentState.STOPPED:
                 self.stop()
 
             self._run_lock.release()
@@ -383,9 +269,7 @@ class SentinelEngine:
         Phase 0 intentionally has no operational workload.
         """
 
-    def _transition_to_failed(
-        self,
-    ) -> None:
+    def _transition_to_failed(self) -> None:
         """Move to FAILED when lifecycle permits it."""
 
         current = self._lifecycle.state
@@ -397,9 +281,7 @@ class SentinelEngine:
             AgentState.STOPPING,
         }:
             try:
-                self._lifecycle.transition(
-                    AgentState.FAILED
-                )
+                self._lifecycle.transition(AgentState.FAILED)
 
             except InvalidStateTransitionError:
                 return
@@ -410,6 +292,4 @@ class SentinelEngine:
     ) -> PublishReport:
         """Publish one control-plane event."""
 
-        return self._event_bus.publish(
-            event
-        )
+        return self._event_bus.publish(event)

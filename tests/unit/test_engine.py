@@ -14,27 +14,17 @@ from sentinel_x.core import (
 )
 
 
-class SentinelEngineTests(
-    unittest.TestCase
-):
+class SentinelEngineTests(unittest.TestCase):
     """Tests for lifecycle and graceful shutdown behavior."""
 
-    def test_start_moves_engine_to_running(
-        self,
-    ) -> None:
+    def test_start_moves_engine_to_running(self) -> None:
         bus = EventBus()
 
-        events: list[
-            SentinelEvent
-        ] = []
+        events: list[SentinelEvent] = []
 
-        bus.subscribe(
-            events.append
-        )
+        bus.subscribe(events.append)
 
-        engine = SentinelEngine(
-            event_bus=bus
-        )
+        engine = SentinelEngine(event_bus=bus)
 
         engine.start()
 
@@ -48,75 +38,44 @@ class SentinelEngineTests(
             EventKind.AGENT_STARTED,
         )
 
-        engine.stop(
-            reason="unit test cleanup"
-        )
+        engine.stop(reason="unit test cleanup")
 
-    def test_stop_request_is_idempotent(
-        self,
-    ) -> None:
-        engine = SentinelEngine(
-            event_bus=EventBus()
-        )
+    def test_stop_request_is_idempotent(self) -> None:
+        engine = SentinelEngine(event_bus=EventBus())
 
-        first = engine.request_stop(
-            reason="first request"
-        )
+        first = engine.request_stop(reason="first request")
 
-        second = engine.request_stop(
-            reason="second request"
-        )
+        second = engine.request_stop(reason="second request")
 
         snapshot = engine.snapshot()
 
-        self.assertTrue(
-            first
-        )
-
-        self.assertFalse(
-            second
-        )
-
-        self.assertTrue(
-            snapshot.stop_requested
-        )
+        self.assertTrue(first)
+        self.assertFalse(second)
+        self.assertTrue(snapshot.stop_requested)
 
         self.assertEqual(
             snapshot.stop_reason,
             "first request",
         )
 
-    def test_run_forever_exits_after_stop_request(
-        self,
-    ) -> None:
+    def test_run_forever_exits_after_stop_request(self) -> None:
         bus = EventBus()
 
-        events: list[
-            SentinelEvent
-        ] = []
+        events: list[SentinelEvent] = []
 
         started = threading.Event()
 
         def collect(
             event: SentinelEvent,
         ) -> None:
-            events.append(
-                event
-            )
+            events.append(event)
 
-            if (
-                event.kind
-                is EventKind.AGENT_STARTED
-            ):
+            if event.kind is EventKind.AGENT_STARTED:
                 started.set()
 
-        bus.subscribe(
-            collect
-        )
+        bus.subscribe(collect)
 
-        engine = SentinelEngine(
-            event_bus=bus
-        )
+        engine = SentinelEngine(event_bus=bus)
 
         worker = threading.Thread(
             target=engine.run_forever,
@@ -129,20 +88,13 @@ class SentinelEngineTests(
         worker.start()
 
         self.assertTrue(
-            started.wait(
-                timeout=1.0
-            ),
-            "engine did not reach "
-            "RUNNING in time",
+            started.wait(timeout=1.0),
+            "engine did not reach RUNNING in time",
         )
 
-        engine.request_stop(
-            reason="unit test shutdown"
-        )
+        engine.request_stop(reason="unit test shutdown")
 
-        worker.join(
-            timeout=1.0
-        )
+        worker.join(timeout=1.0)
 
         self.assertFalse(
             worker.is_alive(),
@@ -154,10 +106,7 @@ class SentinelEngineTests(
             AgentState.STOPPED,
         )
 
-        kinds = [
-            event.kind
-            for event in events
-        ]
+        kinds = [event.kind for event in events]
 
         self.assertIn(
             EventKind.AGENT_STARTED,
@@ -174,16 +123,10 @@ class SentinelEngineTests(
             kinds,
         )
 
-    def test_invalid_tick_interval_is_rejected(
-        self,
-    ) -> None:
-        engine = SentinelEngine(
-            event_bus=EventBus()
-        )
+    def test_invalid_tick_interval_is_rejected(self) -> None:
+        engine = SentinelEngine(event_bus=EventBus())
 
-        with self.assertRaises(
-            ValueError
-        ):
+        with self.assertRaises(ValueError):
             engine.run_forever(
                 tick_interval=0,
             )

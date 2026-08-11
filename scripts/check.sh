@@ -15,7 +15,7 @@ echo " Sentinel-X Engineering Quality Gate"
 echo "======================================"
 echo
 
-echo "[1/4] Python syntax validation"
+echo "[1/5] Python syntax validation"
 python -m compileall -q \
     src/sentinel_x \
     tests
@@ -23,7 +23,15 @@ python -m compileall -q \
 echo "PASS: syntax"
 echo
 
-echo "[2/4] Ruff linting"
+echo "[2/5] Ruff formatting"
+ruff format --check \
+    src/sentinel_x \
+    tests
+
+echo "PASS: formatting"
+echo
+
+echo "[3/5] Ruff linting"
 ruff check \
     src/sentinel_x \
     tests
@@ -31,14 +39,14 @@ ruff check \
 echo "PASS: Ruff"
 echo
 
-echo "[3/4] mypy strict type checking"
+echo "[4/5] mypy strict type checking"
 python -m mypy \
     --package sentinel_x
 
 echo "PASS: mypy"
 echo
 
-echo "[4/4] Unit tests"
+echo "[5/5] Unit tests"
 python -m unittest discover \
     -s tests/unit \
     -v

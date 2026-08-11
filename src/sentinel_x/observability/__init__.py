@@ -20,6 +20,7 @@ from sentinel_x.observability.models import (
     HostObservation,
     HostSnapshot,
     LoadAverage,
+    MemoryStats,
 )
 from sentinel_x.observability.sampling import (
     MAX_SAMPLE_INTERVAL_SECONDS,
@@ -47,6 +48,7 @@ __all__ = [
     "LinuxObservationParseError",
     "LinuxObservationReadError",
     "LoadAverage",
+    "MemoryStats",
     "build_host_observation",
     "calculate_cpu_utilization",
     "host_observation_to_event",

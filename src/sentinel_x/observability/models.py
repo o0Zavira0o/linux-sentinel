@@ -300,6 +300,81 @@ class CpuUtilization:
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryStats:
+    """Raw Linux memory counters selected from /proc/meminfo.
+
+    Values retain the kernel-reported kB unit so persisted evidence
+    remains directly comparable with the source file.
+    """
+
+    mem_total_kb: int
+    mem_available_kb: int
+    mem_free_kb: int
+    buffers_kb: int
+    cached_kb: int
+    swap_total_kb: int
+    swap_free_kb: int
+    sreclaimable_kb: int | None = None
+    shmem_kb: int | None = None
+    swap_cached_kb: int | None = None
+
+    def __post_init__(self) -> None:
+        """Validate required and optional memory counters."""
+
+        required = (
+            ("mem_total_kb", self.mem_total_kb),
+            ("mem_available_kb", self.mem_available_kb),
+            ("mem_free_kb", self.mem_free_kb),
+            ("buffers_kb", self.buffers_kb),
+            ("cached_kb", self.cached_kb),
+            ("swap_total_kb", self.swap_total_kb),
+            ("swap_free_kb", self.swap_free_kb),
+        )
+
+        for name, value in required:
+            _validate_nonnegative_int(name, value)
+
+        optional = (
+            ("sreclaimable_kb", self.sreclaimable_kb),
+            ("shmem_kb", self.shmem_kb),
+            ("swap_cached_kb", self.swap_cached_kb),
+        )
+
+        for optional_name, optional_value in optional:
+            if optional_value is not None:
+                _validate_nonnegative_int(optional_name, optional_value)
+
+        if self.mem_total_kb == 0:
+            raise ValueError("mem_total_kb must be greater than zero")
+
+        if self.mem_available_kb > self.mem_total_kb:
+            raise ValueError("mem_available_kb must not exceed mem_total_kb")
+
+        if self.mem_free_kb > self.mem_total_kb:
+            raise ValueError("mem_free_kb must not exceed mem_total_kb")
+
+        if self.swap_free_kb > self.swap_total_kb:
+            raise ValueError("swap_free_kb must not exceed swap_total_kb")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialization-friendly raw memory mapping."""
+
+        return {
+            "unit": "kB",
+            "mem_total_kb": self.mem_total_kb,
+            "mem_available_kb": self.mem_available_kb,
+            "mem_free_kb": self.mem_free_kb,
+            "buffers_kb": self.buffers_kb,
+            "cached_kb": self.cached_kb,
+            "swap_total_kb": self.swap_total_kb,
+            "swap_free_kb": self.swap_free_kb,
+            "sreclaimable_kb": self.sreclaimable_kb,
+            "shmem_kb": self.shmem_kb,
+            "swap_cached_kb": self.swap_cached_kb,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class LoadAverage:
     """Linux load-average and runnable-task snapshot."""
 

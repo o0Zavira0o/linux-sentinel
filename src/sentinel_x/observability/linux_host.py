@@ -14,10 +14,12 @@ from sentinel_x.observability.models import (
     HostIdentity,
     HostSnapshot,
     LoadAverage,
+    MemoryStats,
 )
 
 
 _PROC_STAT_MAX_BYTES: Final[int] = 1_048_576
+_PROC_MEMINFO_MAX_BYTES: Final[int] = 131_072
 _LOADAVG_MAX_BYTES: Final[int] = 4_096
 _OS_RELEASE_MAX_BYTES: Final[int] = 65_536
 
@@ -102,6 +104,16 @@ class LinuxHostReader:
             identity=identity,
             cpu_times=proc_stat.cpu_times,
             load_average=load_average,
+        )
+
+    def read_memory_stats(self) -> MemoryStats:
+        """Read selected raw memory counters from /proc/meminfo."""
+
+        return _parse_meminfo(
+            _read_bounded_text(
+                self._proc_root / "meminfo",
+                max_bytes=_PROC_MEMINFO_MAX_BYTES,
+            )
         )
 
 
@@ -246,6 +258,98 @@ def _parse_loadavg(text: str) -> LoadAverage:
     except (TypeError, ValueError) as exc:
         raise LinuxObservationParseError(
             f"invalid /proc/loadavg values: {exc}"
+        ) from exc
+
+
+_MEMINFO_REQUIRED_FIELDS: Final[dict[str, str]] = {
+    "MemTotal": "mem_total_kb",
+    "MemAvailable": "mem_available_kb",
+    "MemFree": "mem_free_kb",
+    "Buffers": "buffers_kb",
+    "Cached": "cached_kb",
+    "SwapTotal": "swap_total_kb",
+    "SwapFree": "swap_free_kb",
+}
+
+_MEMINFO_OPTIONAL_FIELDS: Final[dict[str, str]] = {
+    "SReclaimable": "sreclaimable_kb",
+    "Shmem": "shmem_kb",
+    "SwapCached": "swap_cached_kb",
+}
+
+
+def _parse_meminfo(text: str) -> MemoryStats:
+    """Parse selected kB counters from /proc/meminfo."""
+
+    selected_fields = _MEMINFO_REQUIRED_FIELDS | _MEMINFO_OPTIONAL_FIELDS
+    parsed: dict[str, int] = {}
+
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        if ":" not in raw_line:
+            continue
+
+        raw_key, raw_value = raw_line.split(":", maxsplit=1)
+        key = raw_key.strip()
+
+        if key not in selected_fields:
+            continue
+
+        attribute_name = selected_fields[key]
+
+        if attribute_name in parsed:
+            raise LinuxObservationParseError(
+                f"duplicate /proc/meminfo field on line {line_number}: {key}"
+            )
+
+        value_fields = raw_value.split()
+
+        if len(value_fields) != 2 or value_fields[1] != "kB":
+            raise LinuxObservationParseError(
+                f"invalid /proc/meminfo value for {key}: expected '<integer> kB'"
+            )
+
+        try:
+            value = int(value_fields[0])
+        except ValueError as exc:
+            raise LinuxObservationParseError(
+                f"invalid /proc/meminfo integer for {key}: {value_fields[0]!r}"
+            ) from exc
+
+        if value < 0:
+            raise LinuxObservationParseError(
+                f"negative /proc/meminfo value for {key}: {value}"
+            )
+
+        parsed[attribute_name] = value
+
+    missing = [
+        kernel_name
+        for kernel_name, attribute_name in _MEMINFO_REQUIRED_FIELDS.items()
+        if attribute_name not in parsed
+    ]
+
+    if missing:
+        names = ", ".join(missing)
+        raise LinuxObservationParseError(
+            f"/proc/meminfo is missing required field(s): {names}"
+        )
+
+    try:
+        return MemoryStats(
+            mem_total_kb=parsed["mem_total_kb"],
+            mem_available_kb=parsed["mem_available_kb"],
+            mem_free_kb=parsed["mem_free_kb"],
+            buffers_kb=parsed["buffers_kb"],
+            cached_kb=parsed["cached_kb"],
+            swap_total_kb=parsed["swap_total_kb"],
+            swap_free_kb=parsed["swap_free_kb"],
+            sreclaimable_kb=parsed.get("sreclaimable_kb"),
+            shmem_kb=parsed.get("shmem_kb"),
+            swap_cached_kb=parsed.get("swap_cached_kb"),
+        )
+    except (TypeError, ValueError) as exc:
+        raise LinuxObservationParseError(
+            f"invalid /proc/meminfo values: {exc}"
         ) from exc
 
 

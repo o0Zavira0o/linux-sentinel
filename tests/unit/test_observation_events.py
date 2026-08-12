@@ -9,17 +9,25 @@ from datetime import datetime, timezone
 
 from sentinel_x.core import EventBus, EventKind
 from sentinel_x.observability import (
+    FILESYSTEM_OBSERVATION_SOURCE,
+    FILESYSTEM_OBSERVATION_TYPE,
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
     MEMORY_OBSERVATION_SOURCE,
     MEMORY_OBSERVATION_TYPE,
     CpuTimes,
+    FilesystemKind,
+    FilesystemMount,
+    FilesystemReport,
+    FilesystemStats,
     HostIdentity,
     HostSnapshot,
     LoadAverage,
     MemoryStats,
+    build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
+    filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
 )
@@ -107,6 +115,46 @@ def _memory_observation():
 
     return build_memory_observation(
         stats,
+        captured_at=datetime.now(timezone.utc),
+    )
+
+
+def _filesystem_observation():
+    mount = FilesystemMount(
+        mount_id=36,
+        parent_id=25,
+        device_major=8,
+        device_minor=1,
+        root="/",
+        mount_point="/",
+        mount_options=("rw", "relatime"),
+        optional_fields=(),
+        fs_type="ext4",
+        source="/dev/sda1",
+        super_options=("rw",),
+        kind=FilesystemKind.LOCAL,
+    )
+
+    stats = FilesystemStats(
+        mount=mount,
+        fragment_size_bytes=4096,
+        total_blocks=1000,
+        free_blocks=400,
+        available_blocks=350,
+        total_inodes=100,
+        free_inodes=50,
+        available_inodes=40,
+        name_max=255,
+    )
+
+    report = FilesystemReport(
+        mounts=(mount,),
+        filesystems=(stats,),
+        failures=(),
+    )
+
+    return build_filesystem_observation(
+        report,
         captured_at=datetime.now(timezone.utc),
     )
 
@@ -234,13 +282,93 @@ class HostObservationEventTests(unittest.TestCase):
             attributes["observation_type"],
             MEMORY_OBSERVATION_TYPE,
         )
+
         self.assertEqual(
             attributes["memory_stats"]["unit"],
             "kB",
         )
+
         self.assertEqual(
             attributes["memory_utilization"]["used_estimate_kb"],
             8_192_000,
+        )
+
+    def test_filesystem_observation_is_converted_to_typed_event(self) -> None:
+        observation = _filesystem_observation()
+
+        event = filesystem_observation_to_event(observation)
+
+        self.assertIs(event.kind, EventKind.OBSERVATION)
+        self.assertEqual(event.source, FILESYSTEM_OBSERVATION_SOURCE)
+        self.assertEqual(event.occurred_at, observation.captured_at)
+        self.assertEqual(
+            event.attributes["observation_type"],
+            FILESYSTEM_OBSERVATION_TYPE,
+        )
+
+        summary = event.attributes["summary"]
+
+        self.assertIsInstance(summary, dict)
+
+        assert isinstance(summary, dict)
+
+        self.assertEqual(
+            summary["probed_count"],
+            1,
+        )
+
+    def test_filesystem_observation_event_is_persisted_through_event_bus(
+        self,
+    ) -> None:
+        observation = _filesystem_observation()
+        event = filesystem_observation_to_event(observation)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            recorder = JsonlEventRecorder(
+                directory=tmpdir,
+                instance_name="test-node",
+            )
+
+            bus = EventBus()
+            bus.subscribe(recorder)
+
+            report = bus.publish(event)
+
+            event_path = recorder.path
+            recorder.close()
+
+            lines = event_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(report.succeeded)
+        self.assertEqual(report.delivered, 1)
+        self.assertEqual(len(lines), 1)
+
+        payload = json.loads(lines[0])
+        attributes = payload["event"]["attributes"]
+
+        self.assertEqual(
+            attributes["observation_type"],
+            FILESYSTEM_OBSERVATION_TYPE,
+        )
+
+        filesystems = attributes["filesystems"]
+
+        self.assertIsInstance(filesystems, list)
+
+        assert isinstance(filesystems, list)
+
+        self.assertEqual(len(filesystems), 1)
+
+        utilization = filesystems[0]["utilization"]
+
+        self.assertAlmostEqual(
+            utilization["used_percent_of_total"],
+            60.0,
+        )
+
+        self.assertAlmostEqual(
+            utilization["user_capacity_used_percent"],
+            63.1578947368421,
         )
 
 

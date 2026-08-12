@@ -1,9 +1,11 @@
-"""Linux filesystem discovery and raw capacity observability for Sentinel-X."""
+"""Linux filesystem discovery and observability for Sentinel-X."""
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Final
@@ -146,6 +148,27 @@ class FilesystemMount:
             FilesystemKind.MEMORY,
         }
 
+    def to_dict(self) -> dict[str, object]:
+        """Return serialization-friendly mount metadata."""
+
+        return {
+            "mount_id": self.mount_id,
+            "parent_id": self.parent_id,
+            "device_id": self.device_id,
+            "device_major": self.device_major,
+            "device_minor": self.device_minor,
+            "root": self.root,
+            "mount_point": self.mount_point,
+            "mount_options": list(self.mount_options),
+            "optional_fields": list(self.optional_fields),
+            "fs_type": self.fs_type,
+            "source": self.source,
+            "super_options": list(self.super_options),
+            "kind": self.kind.value,
+            "read_only": self.read_only,
+            "probe_by_default": self.probe_by_default,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class FilesystemStats:
@@ -185,6 +208,18 @@ class FilesystemStats:
         for name, value in counters:
             _require_nonnegative_int(name, value)
 
+        if self.free_blocks > self.total_blocks:
+            raise ValueError("free_blocks must not exceed total_blocks")
+
+        if self.available_blocks > self.free_blocks:
+            raise ValueError("available_blocks must not exceed free_blocks")
+
+        if self.free_inodes > self.total_inodes:
+            raise ValueError("free_inodes must not exceed total_inodes")
+
+        if self.available_inodes > self.free_inodes:
+            raise ValueError("available_inodes must not exceed free_inodes")
+
     @property
     def total_bytes(self) -> int:
         """Return filesystem capacity in bytes."""
@@ -203,6 +238,24 @@ class FilesystemStats:
 
         return self.available_blocks * self.fragment_size_bytes
 
+    def to_dict(self) -> dict[str, object]:
+        """Return serialization-friendly raw filesystem evidence."""
+
+        return {
+            "mount": self.mount.to_dict(),
+            "fragment_size_bytes": self.fragment_size_bytes,
+            "total_blocks": self.total_blocks,
+            "free_blocks": self.free_blocks,
+            "available_blocks": self.available_blocks,
+            "total_bytes": self.total_bytes,
+            "free_bytes": self.free_bytes,
+            "available_bytes": self.available_bytes,
+            "total_inodes": self.total_inodes,
+            "free_inodes": self.free_inodes,
+            "available_inodes": self.available_inodes,
+            "name_max": self.name_max,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class FilesystemProbeFailure:
@@ -213,6 +266,26 @@ class FilesystemProbeFailure:
     fs_type: str
     error_type: str
     error_message: str
+
+    def __post_init__(self) -> None:
+        """Validate failure metadata."""
+
+        _require_positive_int("mount_id", self.mount_id)
+        _require_absolute_path("mount_point", self.mount_point)
+        _require_text("fs_type", self.fs_type)
+        _require_text("error_type", self.error_type)
+        _require_text("error_message", self.error_message)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return serialization-friendly failure evidence."""
+
+        return {
+            "mount_id": self.mount_id,
+            "mount_point": self.mount_point,
+            "fs_type": self.fs_type,
+            "error_type": self.error_type,
+            "error_message": self.error_message,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,6 +327,227 @@ class FilesystemReport:
         return len(self.skipped_mounts)
 
 
+@dataclass(frozen=True, slots=True)
+class FilesystemUtilization:
+    """Derived space and inode utilization for one filesystem."""
+
+    used_bytes: int
+    restricted_free_bytes: int
+    used_percent_of_total: float | None
+    available_percent_of_total: float | None
+    user_capacity_used_percent: float | None
+    inode_used: int | None
+    restricted_free_inodes: int | None
+    inode_used_percent_of_total: float | None
+    inode_available_percent_of_total: float | None
+    inode_user_capacity_used_percent: float | None
+
+    def __post_init__(self) -> None:
+        """Validate derived filesystem utilization values."""
+
+        _require_nonnegative_int("used_bytes", self.used_bytes)
+        _require_nonnegative_int(
+            "restricted_free_bytes",
+            self.restricted_free_bytes,
+        )
+
+        space_percentages = (
+            self.used_percent_of_total,
+            self.available_percent_of_total,
+            self.user_capacity_used_percent,
+        )
+
+        if any(value is None for value in space_percentages):
+            if not all(value is None for value in space_percentages):
+                raise ValueError(
+                    "space percentages must either all be present or all be None"
+                )
+
+        else:
+            for percentage_name, percentage_value in (
+                ("used_percent_of_total", self.used_percent_of_total),
+                (
+                    "available_percent_of_total",
+                    self.available_percent_of_total,
+                ),
+                (
+                    "user_capacity_used_percent",
+                    self.user_capacity_used_percent,
+                ),
+            ):
+                assert percentage_value is not None
+                _require_percentage(percentage_name, percentage_value)
+
+            assert self.used_percent_of_total is not None
+            assert self.available_percent_of_total is not None
+
+            if (
+                self.used_percent_of_total + self.available_percent_of_total
+                > 100.0 + 1e-6
+            ):
+                raise ValueError(
+                    "used and available percentages must not exceed 100 percent"
+                )
+
+        inode_values = (
+            self.inode_used,
+            self.restricted_free_inodes,
+            self.inode_used_percent_of_total,
+            self.inode_available_percent_of_total,
+            self.inode_user_capacity_used_percent,
+        )
+
+        if any(value is None for value in inode_values):
+            if not all(value is None for value in inode_values):
+                raise ValueError(
+                    "inode utilization fields must either all be present or all be None"
+                )
+
+        else:
+            assert self.inode_used is not None
+            assert self.restricted_free_inodes is not None
+            assert self.inode_used_percent_of_total is not None
+            assert self.inode_available_percent_of_total is not None
+            assert self.inode_user_capacity_used_percent is not None
+
+            _require_nonnegative_int("inode_used", self.inode_used)
+            _require_nonnegative_int(
+                "restricted_free_inodes",
+                self.restricted_free_inodes,
+            )
+            _require_percentage(
+                "inode_used_percent_of_total",
+                self.inode_used_percent_of_total,
+            )
+            _require_percentage(
+                "inode_available_percent_of_total",
+                self.inode_available_percent_of_total,
+            )
+            _require_percentage(
+                "inode_user_capacity_used_percent",
+                self.inode_user_capacity_used_percent,
+            )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return serialization-friendly utilization metrics."""
+
+        return {
+            "used_bytes": self.used_bytes,
+            "restricted_free_bytes": self.restricted_free_bytes,
+            "used_percent_of_total": self.used_percent_of_total,
+            "available_percent_of_total": self.available_percent_of_total,
+            "user_capacity_used_percent": self.user_capacity_used_percent,
+            "inode_used": self.inode_used,
+            "restricted_free_inodes": self.restricted_free_inodes,
+            "inode_used_percent_of_total": self.inode_used_percent_of_total,
+            "inode_available_percent_of_total": (self.inode_available_percent_of_total),
+            "inode_user_capacity_used_percent": (self.inode_user_capacity_used_percent),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class FilesystemObservationEntry:
+    """Raw and derived evidence for one successfully probed filesystem."""
+
+    stats: FilesystemStats
+    utilization: FilesystemUtilization
+
+    def __post_init__(self) -> None:
+        """Validate entry component types."""
+
+        if not isinstance(self.stats, FilesystemStats):
+            raise TypeError("stats must be FilesystemStats")
+
+        if not isinstance(self.utilization, FilesystemUtilization):
+            raise TypeError("utilization must be FilesystemUtilization")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return serialization-friendly filesystem evidence."""
+
+        return {
+            "raw_stats": self.stats.to_dict(),
+            "utilization": self.utilization.to_dict(),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class FilesystemObservation:
+    """One timestamped filesystem observation across the mount namespace."""
+
+    captured_at: datetime
+    filesystems: tuple[FilesystemObservationEntry, ...]
+    skipped_mounts: tuple[FilesystemMount, ...]
+    failures: tuple[FilesystemProbeFailure, ...]
+
+    def __post_init__(self) -> None:
+        """Validate observation structure and mount uniqueness."""
+
+        _require_aware_datetime("captured_at", self.captured_at)
+
+        for entry in self.filesystems:
+            if not isinstance(entry, FilesystemObservationEntry):
+                raise TypeError(
+                    "filesystems must contain FilesystemObservationEntry objects"
+                )
+
+        for mount in self.skipped_mounts:
+            if not isinstance(mount, FilesystemMount):
+                raise TypeError("skipped_mounts must contain FilesystemMount objects")
+
+        for failure in self.failures:
+            if not isinstance(failure, FilesystemProbeFailure):
+                raise TypeError("failures must contain FilesystemProbeFailure objects")
+
+        mount_ids = [
+            *(entry.stats.mount.mount_id for entry in self.filesystems),
+            *(mount.mount_id for mount in self.skipped_mounts),
+            *(failure.mount_id for failure in self.failures),
+        ]
+
+        if len(set(mount_ids)) != len(mount_ids):
+            raise ValueError("filesystem observation contains duplicate mount IDs")
+
+    @property
+    def discovered_count(self) -> int:
+        """Return total represented mount count."""
+
+        return self.probed_count + self.skipped_count + self.failed_count
+
+    @property
+    def probed_count(self) -> int:
+        """Return successful filesystem probe count."""
+
+        return len(self.filesystems)
+
+    @property
+    def skipped_count(self) -> int:
+        """Return intentionally skipped mount count."""
+
+        return len(self.skipped_mounts)
+
+    @property
+    def failed_count(self) -> int:
+        """Return isolated filesystem probe failure count."""
+
+        return len(self.failures)
+
+    def to_attributes(self) -> dict[str, object]:
+        """Return structured attributes for a SentinelEvent."""
+
+        return {
+            "captured_at": self.captured_at.isoformat(),
+            "summary": {
+                "discovered_count": self.discovered_count,
+                "probed_count": self.probed_count,
+                "skipped_count": self.skipped_count,
+                "failed_count": self.failed_count,
+            },
+            "filesystems": [entry.to_dict() for entry in self.filesystems],
+            "skipped_mounts": [mount.to_dict() for mount in self.skipped_mounts],
+            "failures": [failure.to_dict() for failure in self.failures],
+        }
+
+
 class LinuxFilesystemReader:
     """Discover mounts and collect safe raw capacity evidence."""
 
@@ -287,7 +581,12 @@ class LinuxFilesystemReader:
 
             try:
                 raw_stats = os.statvfs(mount.mount_point)
-                filesystems.append(_build_filesystem_stats(mount, raw_stats))
+                filesystems.append(
+                    _build_filesystem_stats(
+                        mount,
+                        raw_stats,
+                    )
+                )
 
             except (OSError, TypeError, ValueError) as exc:
                 failures.append(
@@ -305,6 +604,124 @@ class LinuxFilesystemReader:
             filesystems=tuple(filesystems),
             failures=tuple(failures),
         )
+
+
+def calculate_filesystem_utilization(
+    stats: FilesystemStats,
+) -> FilesystemUtilization:
+    """Derive capacity and inode utilization from raw statvfs evidence."""
+
+    if not isinstance(stats, FilesystemStats):
+        raise TypeError("calculate_filesystem_utilization() requires FilesystemStats")
+
+    used_blocks = stats.total_blocks - stats.free_blocks
+    restricted_free_blocks = stats.free_blocks - stats.available_blocks
+
+    used_bytes = used_blocks * stats.fragment_size_bytes
+    restricted_free_bytes = restricted_free_blocks * stats.fragment_size_bytes
+
+    if stats.total_blocks == 0:
+        used_percent_of_total: float | None = None
+        available_percent_of_total: float | None = None
+        user_capacity_used_percent: float | None = None
+
+    else:
+        used_percent_of_total = _percent(
+            used_blocks,
+            stats.total_blocks,
+        )
+        available_percent_of_total = _percent(
+            stats.available_blocks,
+            stats.total_blocks,
+        )
+
+        user_capacity_blocks = used_blocks + stats.available_blocks
+
+        if user_capacity_blocks == 0:
+            user_capacity_used_percent = 0.0
+
+        else:
+            user_capacity_used_percent = _percent(
+                used_blocks,
+                user_capacity_blocks,
+            )
+
+    if stats.total_inodes == 0:
+        inode_used: int | None = None
+        restricted_free_inodes: int | None = None
+        inode_used_percent_of_total: float | None = None
+        inode_available_percent_of_total: float | None = None
+        inode_user_capacity_used_percent: float | None = None
+
+    else:
+        inode_used = stats.total_inodes - stats.free_inodes
+        restricted_free_inodes = stats.free_inodes - stats.available_inodes
+
+        inode_used_percent_of_total = _percent(
+            inode_used,
+            stats.total_inodes,
+        )
+        inode_available_percent_of_total = _percent(
+            stats.available_inodes,
+            stats.total_inodes,
+        )
+
+        inode_user_capacity = inode_used + stats.available_inodes
+
+        if inode_user_capacity == 0:
+            inode_user_capacity_used_percent = 0.0
+
+        else:
+            inode_user_capacity_used_percent = _percent(
+                inode_used,
+                inode_user_capacity,
+            )
+
+    return FilesystemUtilization(
+        used_bytes=used_bytes,
+        restricted_free_bytes=restricted_free_bytes,
+        used_percent_of_total=used_percent_of_total,
+        available_percent_of_total=available_percent_of_total,
+        user_capacity_used_percent=user_capacity_used_percent,
+        inode_used=inode_used,
+        restricted_free_inodes=restricted_free_inodes,
+        inode_used_percent_of_total=inode_used_percent_of_total,
+        inode_available_percent_of_total=inode_available_percent_of_total,
+        inode_user_capacity_used_percent=inode_user_capacity_used_percent,
+    )
+
+
+def build_filesystem_observation(
+    report: FilesystemReport,
+    *,
+    captured_at: datetime,
+) -> FilesystemObservation:
+    """Build one filesystem observation from discovery and probe evidence."""
+
+    if not isinstance(report, FilesystemReport):
+        raise TypeError("build_filesystem_observation() requires FilesystemReport")
+
+    entries = tuple(
+        FilesystemObservationEntry(
+            stats=stats,
+            utilization=calculate_filesystem_utilization(stats),
+        )
+        for stats in report.filesystems
+    )
+
+    observation = FilesystemObservation(
+        captured_at=captured_at,
+        filesystems=entries,
+        skipped_mounts=report.skipped_mounts,
+        failures=report.failures,
+    )
+
+    if observation.discovered_count != report.discovered_count:
+        raise FilesystemObservationError(
+            "filesystem report accounting does not match discovered mount count"
+        )
+
+    return observation
 
 
 def _read_bounded_text(path: Path, *, max_bytes: int) -> str:
@@ -549,6 +966,12 @@ def _build_filesystem_stats(
     )
 
 
+def _percent(value: int, total: int) -> float:
+    """Convert a non-negative quantity to a percentage."""
+
+    return (float(value) / float(total)) * 100.0
+
+
 def _require_text(name: str, value: str) -> None:
     """Require a non-empty string."""
 
@@ -585,3 +1008,23 @@ def _require_nonnegative_int(name: str, value: int) -> None:
 
     if value < 0:
         raise ValueError(f"{name} must not be negative")
+
+
+def _require_percentage(name: str, value: float) -> None:
+    """Require a finite percentage in the inclusive 0-100 range."""
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a number")
+
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite")
+
+    if not 0.0 <= value <= 100.0:
+        raise ValueError(f"{name} must be between 0 and 100")
+
+
+def _require_aware_datetime(name: str, value: datetime) -> None:
+    """Require a timezone-aware datetime."""
+
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{name} must be timezone-aware")

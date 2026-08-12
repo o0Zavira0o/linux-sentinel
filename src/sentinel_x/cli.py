@@ -23,12 +23,17 @@ from sentinel_x.config import (
 from sentinel_x.core import EventBus, SentinelEngine, SentinelEvent
 from sentinel_x.observability import (
     CpuSamplingError,
+    FilesystemObservation,
+    FilesystemObservationError,
     HostObservation,
+    LinuxFilesystemReader,
     LinuxHostReader,
     LinuxObservationError,
     MemoryObservation,
+    build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
+    filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
     validate_sample_interval,
@@ -287,8 +292,67 @@ def _print_memory_observation_summary(
         print(f"Swap used: {memory.swap_used_percent:.2f}%")
 
 
+def _format_optional_percentage(value: float | None) -> str:
+    """Render one optional percentage."""
+
+    if value is None:
+        return "n/a"
+
+    return f"{value:.2f}%"
+
+
+def _print_filesystem_observation_summary(
+    observation: FilesystemObservation,
+) -> None:
+    """Render filesystem capacity and data-quality information."""
+
+    print()
+    print("Sentinel-X filesystem observation")
+    print("=" * 33)
+    print(f"Discovered mounts: {observation.discovered_count}")
+    print(f"Probed filesystems: {observation.probed_count}")
+    print(f"Skipped mounts: {observation.skipped_count}")
+    print(f"Probe failures: {observation.failed_count}")
+
+    if observation.filesystems:
+        print()
+        print("Filesystem utilization:")
+
+    gib = 1024**3
+
+    for entry in observation.filesystems:
+        mount = entry.stats.mount
+        utilization = entry.utilization
+
+        print(f"- {mount.mount_point} [{mount.fs_type}; {mount.kind.value}]")
+        print(
+            "  used/total: "
+            f"{_format_optional_percentage(utilization.used_percent_of_total)}"
+        )
+        print(
+            "  user capacity used: "
+            f"{_format_optional_percentage(utilization.user_capacity_used_percent)}"
+        )
+        print(f"  available: {entry.stats.available_bytes / gib:.2f} GiB")
+        print(
+            "  inode used/total: "
+            f"{_format_optional_percentage(utilization.inode_used_percent_of_total)}"
+        )
+
+    if observation.failures:
+        print()
+        print("Filesystem probe failures:")
+
+        for failure in observation.failures:
+            print(
+                f"- {failure.mount_point}: "
+                f"{failure.error_type}: "
+                f"{failure.error_message}"
+            )
+
+
 def _run_observe_host(args: Namespace) -> int:
-    """Collect, publish, and optionally persist one Linux host observation."""
+    """Collect, publish, and optionally persist Linux host observations."""
 
     loaded = _load_configuration(args.config)
 
@@ -306,19 +370,23 @@ def _run_observe_host(args: Namespace) -> int:
 
         return 2
 
-    reader = LinuxHostReader()
+    host_reader = LinuxHostReader()
+    filesystem_reader = LinuxFilesystemReader()
 
     try:
-        previous = reader.read_snapshot()
+        previous = host_reader.read_snapshot()
         monotonic_start = time.monotonic()
 
         time.sleep(requested_interval)
 
-        current = reader.read_snapshot()
+        current = host_reader.read_snapshot()
         elapsed = time.monotonic() - monotonic_start
 
-        memory_stats = reader.read_memory_stats()
+        memory_stats = host_reader.read_memory_stats()
         memory_captured_at = datetime.now(timezone.utc)
+
+        filesystem_report = filesystem_reader.read_report()
+        filesystem_captured_at = datetime.now(timezone.utc)
 
         host_observation = build_host_observation(
             previous,
@@ -331,6 +399,11 @@ def _run_observe_host(args: Namespace) -> int:
             captured_at=memory_captured_at,
         )
 
+        filesystem_observation = build_filesystem_observation(
+            filesystem_report,
+            captured_at=filesystem_captured_at,
+        )
+
     except KeyboardInterrupt:
         print(
             "host observation interrupted",
@@ -339,7 +412,11 @@ def _run_observe_host(args: Namespace) -> int:
 
         return 130
 
-    except (LinuxObservationError, CpuSamplingError) as exc:
+    except (
+        LinuxObservationError,
+        CpuSamplingError,
+        FilesystemObservationError,
+    ) as exc:
         print(
             f"observation error: {exc}",
             file=sys.stderr,
@@ -380,16 +457,20 @@ def _run_observe_host(args: Namespace) -> int:
 
     _print_host_observation_summary(host_observation)
     _print_memory_observation_summary(memory_observation)
+    _print_filesystem_observation_summary(filesystem_observation)
 
     host_event = host_observation_to_event(host_observation)
     memory_event = memory_observation_to_event(memory_observation)
+    filesystem_event = filesystem_observation_to_event(filesystem_observation)
 
     host_report = event_bus.publish(host_event)
     memory_report = event_bus.publish(memory_event)
+    filesystem_event_report = event_bus.publish(filesystem_event)
 
     reports = (
         host_report,
         memory_report,
+        filesystem_event_report,
     )
 
     for report in reports:

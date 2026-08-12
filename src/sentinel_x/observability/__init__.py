@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from sentinel_x.observability.events import (
+    FILESYSTEM_OBSERVATION_SOURCE,
+    FILESYSTEM_OBSERVATION_TYPE,
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
     MEMORY_OBSERVATION_SOURCE,
     MEMORY_OBSERVATION_TYPE,
+    filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
 )
@@ -15,11 +18,16 @@ from sentinel_x.observability.filesystem import (
     FilesystemMount,
     FilesystemMountParseError,
     FilesystemMountReadError,
+    FilesystemObservation,
+    FilesystemObservationEntry,
     FilesystemObservationError,
     FilesystemProbeFailure,
     FilesystemReport,
     FilesystemStats,
+    FilesystemUtilization,
     LinuxFilesystemReader,
+    build_filesystem_observation,
+    calculate_filesystem_utilization,
 )
 from sentinel_x.observability.linux_host import (
     LinuxHostReader,
@@ -53,6 +61,8 @@ from sentinel_x.observability.sampling import (
 
 
 __all__ = [
+    "FILESYSTEM_OBSERVATION_SOURCE",
+    "FILESYSTEM_OBSERVATION_TYPE",
     "HOST_OBSERVATION_SOURCE",
     "HOST_OBSERVATION_TYPE",
     "MAX_SAMPLE_INTERVAL_SECONDS",
@@ -66,10 +76,13 @@ __all__ = [
     "FilesystemMount",
     "FilesystemMountParseError",
     "FilesystemMountReadError",
+    "FilesystemObservation",
+    "FilesystemObservationEntry",
     "FilesystemObservationError",
     "FilesystemProbeFailure",
     "FilesystemReport",
     "FilesystemStats",
+    "FilesystemUtilization",
     "HostIdentity",
     "HostObservation",
     "HostSnapshot",
@@ -82,10 +95,13 @@ __all__ = [
     "MemoryObservation",
     "MemoryStats",
     "MemoryUtilization",
+    "build_filesystem_observation",
     "build_host_observation",
     "build_memory_observation",
     "calculate_cpu_utilization",
+    "calculate_filesystem_utilization",
     "calculate_memory_utilization",
+    "filesystem_observation_to_event",
     "host_observation_to_event",
     "memory_observation_to_event",
     "validate_sample_interval",

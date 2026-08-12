@@ -13,6 +13,14 @@ from sentinel_x.observability.disk_io import (
     DiskStatsSnapshot,
     LinuxDiskStatsReader,
 )
+from sentinel_x.observability.disk_io_sampling import (
+    DiskIoDeviceSample,
+    DiskIoMetrics,
+    DiskIoObservation,
+    DiskIoSampleStatus,
+    DiskIoSamplingError,
+    build_disk_io_observation,
+)
 from sentinel_x.observability.events import (
     FILESYSTEM_OBSERVATION_SOURCE,
     FILESYSTEM_OBSERVATION_TYPE,
@@ -86,7 +94,12 @@ __all__ = [
     "CpuSamplingError",
     "CpuTimes",
     "CpuUtilization",
+    "DiskIoDeviceSample",
+    "DiskIoMetrics",
+    "DiskIoObservation",
     "DiskIoObservationError",
+    "DiskIoSampleStatus",
+    "DiskIoSamplingError",
     "DiskStats",
     "DiskStatsParseError",
     "DiskStatsReadError",
@@ -115,6 +128,7 @@ __all__ = [
     "MemoryObservation",
     "MemoryStats",
     "MemoryUtilization",
+    "build_disk_io_observation",
     "build_filesystem_observation",
     "build_host_observation",
     "build_memory_observation",

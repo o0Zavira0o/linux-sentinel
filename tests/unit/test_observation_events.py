@@ -9,13 +9,19 @@ from datetime import datetime, timezone
 
 from sentinel_x.core import EventBus, EventKind
 from sentinel_x.observability import (
+    DISK_IO_OBSERVATION_SOURCE,
+    DISK_IO_OBSERVATION_TYPE,
     FILESYSTEM_OBSERVATION_SOURCE,
     FILESYSTEM_OBSERVATION_TYPE,
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
     MEMORY_OBSERVATION_SOURCE,
     MEMORY_OBSERVATION_TYPE,
+    BlockDeviceIdentity,
+    BlockDeviceKind,
     CpuTimes,
+    DiskStats,
+    DiskStatsSnapshot,
     FilesystemKind,
     FilesystemMount,
     FilesystemReport,
@@ -24,9 +30,11 @@ from sentinel_x.observability import (
     HostSnapshot,
     LoadAverage,
     MemoryStats,
+    build_disk_io_observation,
     build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
+    disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
@@ -156,6 +164,91 @@ def _filesystem_observation():
     return build_filesystem_observation(
         report,
         captured_at=datetime.now(timezone.utc),
+    )
+
+
+def _disk_io_observation():
+    identity = BlockDeviceIdentity(
+        major=259,
+        minor=0,
+        name="nvme0n1",
+        kind=BlockDeviceKind.WHOLE_DISK,
+        sysfs_path="/sys/dev/block/259:0",
+    )
+
+    previous_stats = DiskStats(
+        identity=identity,
+        reads_completed=100,
+        reads_merged=5,
+        sectors_read=2000,
+        read_time_ms=500,
+        writes_completed=80,
+        writes_merged=4,
+        sectors_written=1600,
+        write_time_ms=400,
+        io_in_progress=3,
+        io_time_ms=600,
+        weighted_io_time_ms=900,
+        discards_completed=10,
+        discards_merged=1,
+        sectors_discarded=100,
+        discard_time_ms=50,
+        flushes_completed=5,
+        flush_time_ms=20,
+    )
+
+    current_stats = DiskStats(
+        identity=identity,
+        reads_completed=120,
+        reads_merged=6,
+        sectors_read=2400,
+        read_time_ms=560,
+        writes_completed=90,
+        writes_merged=5,
+        sectors_written=1900,
+        write_time_ms=440,
+        io_in_progress=1,
+        io_time_ms=1500,
+        weighted_io_time_ms=3900,
+        discards_completed=14,
+        discards_merged=2,
+        sectors_discarded=180,
+        discard_time_ms=90,
+        flushes_completed=7,
+        flush_time_ms=26,
+    )
+
+    sample_started_at = datetime(
+        2026,
+        1,
+        1,
+        tzinfo=timezone.utc,
+    )
+
+    captured_at = datetime(
+        2026,
+        1,
+        1,
+        0,
+        0,
+        2,
+        tzinfo=timezone.utc,
+    )
+
+    previous = DiskStatsSnapshot(
+        captured_at=sample_started_at,
+        devices=(previous_stats,),
+    )
+
+    current = DiskStatsSnapshot(
+        captured_at=captured_at,
+        devices=(current_stats,),
+    )
+
+    return build_disk_io_observation(
+        previous,
+        current,
+        sample_interval_seconds=2.0,
     )
 
 
@@ -369,6 +462,94 @@ class HostObservationEventTests(unittest.TestCase):
         self.assertAlmostEqual(
             utilization["user_capacity_used_percent"],
             63.1578947368421,
+        )
+
+    def test_disk_io_observation_is_converted_to_typed_event(self) -> None:
+        observation = _disk_io_observation()
+
+        event = disk_io_observation_to_event(observation)
+
+        self.assertIs(event.kind, EventKind.OBSERVATION)
+        self.assertEqual(event.source, DISK_IO_OBSERVATION_SOURCE)
+        self.assertEqual(event.occurred_at, observation.captured_at)
+        self.assertEqual(
+            event.attributes["observation_type"],
+            DISK_IO_OBSERVATION_TYPE,
+        )
+
+        summary = event.attributes["summary"]
+
+        self.assertIsInstance(summary, dict)
+
+        assert isinstance(summary, dict)
+
+        self.assertEqual(summary["sampled_count"], 1)
+        self.assertEqual(summary["counter_reset_count"], 0)
+
+        devices = event.attributes["devices"]
+
+        self.assertIsInstance(devices, list)
+
+        assert isinstance(devices, list)
+
+        metrics = devices[0]["metrics"]
+
+        self.assertIsInstance(metrics, dict)
+
+        assert isinstance(metrics, dict)
+
+        self.assertAlmostEqual(metrics["read_iops"], 10.0)
+        self.assertAlmostEqual(metrics["write_iops"], 5.0)
+
+    def test_disk_io_observation_event_is_persisted_through_event_bus(
+        self,
+    ) -> None:
+        observation = _disk_io_observation()
+        event = disk_io_observation_to_event(observation)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            recorder = JsonlEventRecorder(
+                directory=tmpdir,
+                instance_name="test-node",
+            )
+
+            bus = EventBus()
+            bus.subscribe(recorder)
+
+            report = bus.publish(event)
+
+            event_path = recorder.path
+            recorder.close()
+
+            lines = event_path.read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(report.succeeded)
+        self.assertEqual(report.delivered, 1)
+        self.assertEqual(len(lines), 1)
+
+        payload = json.loads(lines[0])
+        attributes = payload["event"]["attributes"]
+
+        self.assertEqual(
+            attributes["observation_type"],
+            DISK_IO_OBSERVATION_TYPE,
+        )
+
+        self.assertEqual(
+            attributes["summary"]["sampled_count"],
+            1,
+        )
+
+        devices = attributes["devices"]
+
+        self.assertEqual(len(devices), 1)
+        self.assertEqual(devices[0]["status"], "sampled")
+        self.assertIsNotNone(devices[0]["start_stats"])
+        self.assertIsNotNone(devices[0]["end_stats"])
+
+        self.assertAlmostEqual(
+            devices[0]["metrics"]["total_rw_iops"],
+            15.0,
         )
 
 

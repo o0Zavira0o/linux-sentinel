@@ -22,12 +22,15 @@ from sentinel_x.observability.disk_io_sampling import (
     build_disk_io_observation,
 )
 from sentinel_x.observability.events import (
+    DISK_IO_OBSERVATION_SOURCE,
+    DISK_IO_OBSERVATION_TYPE,
     FILESYSTEM_OBSERVATION_SOURCE,
     FILESYSTEM_OBSERVATION_TYPE,
     HOST_OBSERVATION_SOURCE,
     HOST_OBSERVATION_TYPE,
     MEMORY_OBSERVATION_SOURCE,
     MEMORY_OBSERVATION_TYPE,
+    disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
@@ -80,6 +83,8 @@ from sentinel_x.observability.sampling import (
 
 
 __all__ = [
+    "DISK_IO_OBSERVATION_SOURCE",
+    "DISK_IO_OBSERVATION_TYPE",
     "DISK_SECTOR_BYTES",
     "FILESYSTEM_OBSERVATION_SOURCE",
     "FILESYSTEM_OBSERVATION_TYPE",
@@ -135,6 +140,7 @@ __all__ = [
     "calculate_cpu_utilization",
     "calculate_filesystem_utilization",
     "calculate_memory_utilization",
+    "disk_io_observation_to_event",
     "filesystem_observation_to_event",
     "host_observation_to_event",
     "memory_observation_to_event",

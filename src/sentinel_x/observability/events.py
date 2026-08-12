@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Final
 
 from sentinel_x.core import EventKind, SentinelEvent
+from sentinel_x.observability.disk_io_sampling import DiskIoObservation
 from sentinel_x.observability.filesystem import FilesystemObservation
 from sentinel_x.observability.models import HostObservation, MemoryObservation
 
@@ -17,6 +18,9 @@ MEMORY_OBSERVATION_TYPE: Final[str] = "linux.host.memory"
 
 FILESYSTEM_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.filesystem"
 FILESYSTEM_OBSERVATION_TYPE: Final[str] = "linux.host.filesystem"
+
+DISK_IO_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.disk_io"
+DISK_IO_OBSERVATION_TYPE: Final[str] = "linux.host.disk_io"
 
 
 def host_observation_to_event(
@@ -65,6 +69,23 @@ def filesystem_observation_to_event(
         kind=EventKind.OBSERVATION,
         source=FILESYSTEM_OBSERVATION_SOURCE,
         message="Linux host filesystem observation collected.",
+        attributes=attributes,
+        occurred_at=observation.captured_at,
+    )
+
+
+def disk_io_observation_to_event(
+    observation: DiskIoObservation,
+) -> SentinelEvent:
+    """Convert one sampled disk I/O observation into a SentinelEvent."""
+
+    attributes = observation.to_dict()
+    attributes["observation_type"] = DISK_IO_OBSERVATION_TYPE
+
+    return SentinelEvent(
+        kind=EventKind.OBSERVATION,
+        source=DISK_IO_OBSERVATION_SOURCE,
+        message="Linux host disk I/O observation collected.",
         attributes=attributes,
         occurred_at=observation.captured_at,
     )

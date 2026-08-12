@@ -22,17 +22,24 @@ from sentinel_x.config import (
 )
 from sentinel_x.core import EventBus, SentinelEngine, SentinelEvent
 from sentinel_x.observability import (
+    BlockDeviceKind,
     CpuSamplingError,
+    DiskIoObservation,
+    DiskIoObservationError,
+    DiskIoSampleStatus,
     FilesystemObservation,
     FilesystemObservationError,
     HostObservation,
+    LinuxDiskStatsReader,
     LinuxFilesystemReader,
     LinuxHostReader,
     LinuxObservationError,
     MemoryObservation,
+    build_disk_io_observation,
     build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
+    disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
@@ -119,7 +126,7 @@ def _build_parser() -> ArgumentParser:
         metavar="SECONDS",
         type=float,
         default=1.0,
-        help="Delay between CPU counter samples. Default: 1.0 second.",
+        help="Delay between sampled CPU and disk I/O counters. Default: 1.0 second.",
     )
 
     return parser
@@ -351,6 +358,61 @@ def _print_filesystem_observation_summary(
             )
 
 
+def _print_disk_io_observation_summary(
+    observation: DiskIoObservation,
+) -> None:
+    """Render sampled block-device I/O and data-quality information."""
+
+    print()
+    print("Sentinel-X disk I/O observation")
+    print("=" * 31)
+    print(f"Devices: {len(observation.devices)}")
+    print(f"Sampled: {observation.sampled_count}")
+    print(f"Appeared: {observation.appeared_count}")
+    print(f"Disappeared: {observation.disappeared_count}")
+    print(f"Counter resets: {observation.counter_reset_count}")
+    print(f"Identity changes: {observation.identity_changed_count}")
+
+    whole_disk_samples = tuple(
+        sample
+        for sample in observation.devices
+        if sample.identity.kind is BlockDeviceKind.WHOLE_DISK
+    )
+
+    if not whole_disk_samples:
+        return
+
+    print()
+    print("Whole-device sampled I/O:")
+
+    mib = 1024**2
+
+    for sample in whole_disk_samples:
+        print(
+            f"- {sample.identity.device_id} "
+            f"{sample.identity.name} "
+            f"[{sample.status.value}]"
+        )
+
+        if sample.status is DiskIoSampleStatus.COUNTER_RESET:
+            print(f"  regressed counters: {', '.join(sample.regressed_fields)}")
+            continue
+
+        if sample.status is not DiskIoSampleStatus.SAMPLED:
+            continue
+
+        metrics = sample.metrics
+
+        assert metrics is not None
+
+        print(f"  read IOPS: {metrics.read_iops:.2f}")
+        print(f"  write IOPS: {metrics.write_iops:.2f}")
+        print(f"  read throughput: {metrics.read_bytes_per_second / mib:.3f} MiB/s")
+        print(f"  write throughput: {metrics.write_bytes_per_second / mib:.3f} MiB/s")
+        print(f"  busy estimate: {metrics.io_busy_percent_estimate:.2f}%")
+        print(f"  queue estimate: {metrics.weighted_queue_depth_estimate:.3f}")
+
+
 def _run_observe_host(args: Namespace) -> int:
     """Collect, publish, and optionally persist Linux host observations."""
 
@@ -372,15 +434,22 @@ def _run_observe_host(args: Namespace) -> int:
 
     host_reader = LinuxHostReader()
     filesystem_reader = LinuxFilesystemReader()
+    disk_io_reader = LinuxDiskStatsReader()
 
     try:
         previous = host_reader.read_snapshot()
-        monotonic_start = time.monotonic()
+        host_monotonic_start = time.monotonic()
+
+        previous_disk = disk_io_reader.read_snapshot()
+        disk_monotonic_start = time.monotonic()
 
         time.sleep(requested_interval)
 
         current = host_reader.read_snapshot()
-        elapsed = time.monotonic() - monotonic_start
+        host_elapsed = time.monotonic() - host_monotonic_start
+
+        current_disk = disk_io_reader.read_snapshot()
+        disk_elapsed = time.monotonic() - disk_monotonic_start
 
         memory_stats = host_reader.read_memory_stats()
         memory_captured_at = datetime.now(timezone.utc)
@@ -391,7 +460,7 @@ def _run_observe_host(args: Namespace) -> int:
         host_observation = build_host_observation(
             previous,
             current,
-            sample_interval_seconds=elapsed,
+            sample_interval_seconds=host_elapsed,
         )
 
         memory_observation = build_memory_observation(
@@ -402,6 +471,12 @@ def _run_observe_host(args: Namespace) -> int:
         filesystem_observation = build_filesystem_observation(
             filesystem_report,
             captured_at=filesystem_captured_at,
+        )
+
+        disk_io_observation = build_disk_io_observation(
+            previous_disk,
+            current_disk,
+            sample_interval_seconds=disk_elapsed,
         )
 
     except KeyboardInterrupt:
@@ -416,6 +491,7 @@ def _run_observe_host(args: Namespace) -> int:
         LinuxObservationError,
         CpuSamplingError,
         FilesystemObservationError,
+        DiskIoObservationError,
     ) as exc:
         print(
             f"observation error: {exc}",
@@ -458,19 +534,23 @@ def _run_observe_host(args: Namespace) -> int:
     _print_host_observation_summary(host_observation)
     _print_memory_observation_summary(memory_observation)
     _print_filesystem_observation_summary(filesystem_observation)
+    _print_disk_io_observation_summary(disk_io_observation)
 
     host_event = host_observation_to_event(host_observation)
     memory_event = memory_observation_to_event(memory_observation)
     filesystem_event = filesystem_observation_to_event(filesystem_observation)
+    disk_io_event = disk_io_observation_to_event(disk_io_observation)
 
     host_report = event_bus.publish(host_event)
     memory_report = event_bus.publish(memory_event)
     filesystem_event_report = event_bus.publish(filesystem_event)
+    disk_io_report = event_bus.publish(disk_io_event)
 
     reports = (
         host_report,
         memory_report,
         filesystem_event_report,
+        disk_io_report,
     )
 
     for report in reports:

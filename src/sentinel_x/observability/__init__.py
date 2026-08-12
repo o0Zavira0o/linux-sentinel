@@ -2,6 +2,17 @@
 
 from __future__ import annotations
 
+from sentinel_x.observability.disk_io import (
+    DISK_SECTOR_BYTES,
+    BlockDeviceIdentity,
+    BlockDeviceKind,
+    DiskIoObservationError,
+    DiskStats,
+    DiskStatsParseError,
+    DiskStatsReadError,
+    DiskStatsSnapshot,
+    LinuxDiskStatsReader,
+)
 from sentinel_x.observability.events import (
     FILESYSTEM_OBSERVATION_SOURCE,
     FILESYSTEM_OBSERVATION_TYPE,
@@ -61,6 +72,7 @@ from sentinel_x.observability.sampling import (
 
 
 __all__ = [
+    "DISK_SECTOR_BYTES",
     "FILESYSTEM_OBSERVATION_SOURCE",
     "FILESYSTEM_OBSERVATION_TYPE",
     "HOST_OBSERVATION_SOURCE",
@@ -69,9 +81,16 @@ __all__ = [
     "MEMORY_OBSERVATION_SOURCE",
     "MEMORY_OBSERVATION_TYPE",
     "MIN_SAMPLE_INTERVAL_SECONDS",
+    "BlockDeviceIdentity",
+    "BlockDeviceKind",
     "CpuSamplingError",
     "CpuTimes",
     "CpuUtilization",
+    "DiskIoObservationError",
+    "DiskStats",
+    "DiskStatsParseError",
+    "DiskStatsReadError",
+    "DiskStatsSnapshot",
     "FilesystemKind",
     "FilesystemMount",
     "FilesystemMountParseError",
@@ -86,6 +105,7 @@ __all__ = [
     "HostIdentity",
     "HostObservation",
     "HostSnapshot",
+    "LinuxDiskStatsReader",
     "LinuxFilesystemReader",
     "LinuxHostReader",
     "LinuxObservationError",

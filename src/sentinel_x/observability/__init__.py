@@ -72,6 +72,20 @@ from sentinel_x.observability.models import (
     MemoryStats,
     MemoryUtilization,
 )
+from sentinel_x.observability.network import (
+    ARPHRD_LOOPBACK,
+    LinuxNetworkReader,
+    NetworkIdentityProbeFailure,
+    NetworkIdentityReadError,
+    NetworkInterfaceIdentity,
+    NetworkInterfaceRecord,
+    NetworkInterfaceStats,
+    NetworkObservationError,
+    NetworkOperState,
+    NetworkStatsParseError,
+    NetworkStatsReadError,
+    NetworkStatsSnapshot,
+)
 from sentinel_x.observability.sampling import (
     MAX_SAMPLE_INTERVAL_SECONDS,
     MIN_SAMPLE_INTERVAL_SECONDS,
@@ -83,6 +97,7 @@ from sentinel_x.observability.sampling import (
 
 
 __all__ = [
+    "ARPHRD_LOOPBACK",
     "DISK_IO_OBSERVATION_SOURCE",
     "DISK_IO_OBSERVATION_TYPE",
     "DISK_SECTOR_BYTES",
@@ -126,6 +141,7 @@ __all__ = [
     "LinuxDiskStatsReader",
     "LinuxFilesystemReader",
     "LinuxHostReader",
+    "LinuxNetworkReader",
     "LinuxObservationError",
     "LinuxObservationParseError",
     "LinuxObservationReadError",
@@ -133,6 +149,16 @@ __all__ = [
     "MemoryObservation",
     "MemoryStats",
     "MemoryUtilization",
+    "NetworkIdentityProbeFailure",
+    "NetworkIdentityReadError",
+    "NetworkInterfaceIdentity",
+    "NetworkInterfaceRecord",
+    "NetworkInterfaceStats",
+    "NetworkObservationError",
+    "NetworkOperState",
+    "NetworkStatsParseError",
+    "NetworkStatsReadError",
+    "NetworkStatsSnapshot",
     "build_disk_io_observation",
     "build_filesystem_observation",
     "build_host_observation",

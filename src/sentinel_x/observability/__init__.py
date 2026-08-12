@@ -30,10 +30,13 @@ from sentinel_x.observability.events import (
     HOST_OBSERVATION_TYPE,
     MEMORY_OBSERVATION_SOURCE,
     MEMORY_OBSERVATION_TYPE,
+    NETWORK_OBSERVATION_SOURCE,
+    NETWORK_OBSERVATION_TYPE,
     disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
+    network_observation_to_event,
 )
 from sentinel_x.observability.filesystem import (
     FilesystemKind,
@@ -118,6 +121,8 @@ __all__ = [
     "MEMORY_OBSERVATION_SOURCE",
     "MEMORY_OBSERVATION_TYPE",
     "MIN_SAMPLE_INTERVAL_SECONDS",
+    "NETWORK_OBSERVATION_SOURCE",
+    "NETWORK_OBSERVATION_TYPE",
     "BlockDeviceIdentity",
     "BlockDeviceKind",
     "CpuSamplingError",
@@ -186,5 +191,6 @@ __all__ = [
     "filesystem_observation_to_event",
     "host_observation_to_event",
     "memory_observation_to_event",
+    "network_observation_to_event",
     "validate_sample_interval",
 ]

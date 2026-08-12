@@ -33,16 +33,22 @@ from sentinel_x.observability import (
     LinuxDiskStatsReader,
     LinuxFilesystemReader,
     LinuxHostReader,
+    LinuxNetworkReader,
     LinuxObservationError,
     MemoryObservation,
+    NetworkObservation,
+    NetworkObservationError,
+    NetworkSampleStatus,
     build_disk_io_observation,
     build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
+    build_network_observation,
     disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
+    network_observation_to_event,
     validate_sample_interval,
 )
 from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
@@ -126,7 +132,10 @@ def _build_parser() -> ArgumentParser:
         metavar="SECONDS",
         type=float,
         default=1.0,
-        help="Delay between sampled CPU and disk I/O counters. Default: 1.0 second.",
+        help=(
+            "Delay between sampled CPU, disk I/O, and network counters. "
+            "Default: 1.0 second."
+        ),
     )
 
     return parser
@@ -413,6 +422,103 @@ def _print_disk_io_observation_summary(
         print(f"  queue estimate: {metrics.weighted_queue_depth_estimate:.3f}")
 
 
+def _print_network_observation_summary(
+    observation: NetworkObservation,
+) -> None:
+    """Render sampled network-interface metrics and data-quality evidence."""
+
+    print()
+    print("Sentinel-X network observation")
+    print("=" * 30)
+    print(f"Interfaces: {len(observation.interfaces)}")
+    print(f"Sampled: {observation.sampled_count}")
+    print(f"Appeared: {observation.appeared_count}")
+    print(f"Disappeared: {observation.disappeared_count}")
+    print(f"Counter resets: {observation.counter_reset_count}")
+    print(f"Identity changes: {observation.identity_changed_count}")
+    print(f"Identity unverified: {observation.identity_unverified_count}")
+    print(f"Renamed: {observation.renamed_count}")
+    print(f"Start identity failures: {len(observation.start_identity_failures)}")
+    print(f"End identity failures: {len(observation.end_identity_failures)}")
+
+    print()
+    print("Interface sampled I/O:")
+
+    kib = 1024
+
+    for sample in observation.interfaces:
+        identity = sample.identity
+        operstate = "n/a" if identity.operstate is None else identity.operstate.value
+
+        print(
+            f"- {identity.name} "
+            f"ifindex={identity.ifindex!s} "
+            f"[{sample.status.value}] "
+            f"state={operstate} "
+            f"loopback={identity.is_loopback}"
+        )
+
+        if sample.status is NetworkSampleStatus.COUNTER_RESET:
+            print(f"  regressed counters: {', '.join(sample.regressed_fields)}")
+            continue
+
+        if sample.status is NetworkSampleStatus.IDENTITY_CHANGED:
+            if sample.start_record is not None and sample.end_record is not None:
+                print(
+                    "  identity: "
+                    f"{sample.start_record.identity.name}/"
+                    f"{sample.start_record.identity.ifindex!s} -> "
+                    f"{sample.end_record.identity.name}/"
+                    f"{sample.end_record.identity.ifindex!s}"
+                )
+            continue
+
+        if sample.status is NetworkSampleStatus.IDENTITY_UNVERIFIED:
+            print("  identity: unverified; rate metrics suppressed")
+            continue
+
+        if sample.status is not NetworkSampleStatus.SAMPLED:
+            continue
+
+        metrics = sample.metrics
+
+        assert metrics is not None
+
+        print(
+            f"  RX: {metrics.rx_bytes_per_second / kib:.3f} KiB/s "
+            f"{metrics.rx_packets_per_second:.2f} pkt/s"
+        )
+        print(
+            f"  TX: {metrics.tx_bytes_per_second / kib:.3f} KiB/s "
+            f"{metrics.tx_packets_per_second:.2f} pkt/s"
+        )
+        print(f"  RX errors/drop: {metrics.rx_errors_delta}/{metrics.rx_dropped_delta}")
+        print(f"  TX errors/drop: {metrics.tx_errors_delta}/{metrics.tx_dropped_delta}")
+
+        changes: list[str] = []
+
+        if sample.name_changed:
+            changes.append("name")
+
+        if sample.iflink_changed:
+            changes.append("iflink")
+
+        if sample.mtu_changed:
+            changes.append("mtu")
+
+        if sample.operstate_changed:
+            changes.append("operstate")
+
+        if sample.carrier_changed:
+            changes.append("carrier")
+
+        if sample.address_changed:
+            changes.append("address")
+
+        if changes:
+            print(f"  metadata changes: {', '.join(changes)}")
+
+
 def _run_observe_host(args: Namespace) -> int:
     """Collect, publish, and optionally persist Linux host observations."""
 
@@ -435,6 +541,7 @@ def _run_observe_host(args: Namespace) -> int:
     host_reader = LinuxHostReader()
     filesystem_reader = LinuxFilesystemReader()
     disk_io_reader = LinuxDiskStatsReader()
+    network_reader = LinuxNetworkReader()
 
     try:
         previous = host_reader.read_snapshot()
@@ -443,6 +550,9 @@ def _run_observe_host(args: Namespace) -> int:
         previous_disk = disk_io_reader.read_snapshot()
         disk_monotonic_start = time.monotonic()
 
+        previous_network = network_reader.read_snapshot()
+        network_monotonic_start = time.monotonic()
+
         time.sleep(requested_interval)
 
         current = host_reader.read_snapshot()
@@ -450,6 +560,9 @@ def _run_observe_host(args: Namespace) -> int:
 
         current_disk = disk_io_reader.read_snapshot()
         disk_elapsed = time.monotonic() - disk_monotonic_start
+
+        current_network = network_reader.read_snapshot()
+        network_elapsed = time.monotonic() - network_monotonic_start
 
         memory_stats = host_reader.read_memory_stats()
         memory_captured_at = datetime.now(timezone.utc)
@@ -479,6 +592,12 @@ def _run_observe_host(args: Namespace) -> int:
             sample_interval_seconds=disk_elapsed,
         )
 
+        network_observation = build_network_observation(
+            previous_network,
+            current_network,
+            sample_interval_seconds=network_elapsed,
+        )
+
     except KeyboardInterrupt:
         print(
             "host observation interrupted",
@@ -492,6 +611,7 @@ def _run_observe_host(args: Namespace) -> int:
         CpuSamplingError,
         FilesystemObservationError,
         DiskIoObservationError,
+        NetworkObservationError,
     ) as exc:
         print(
             f"observation error: {exc}",
@@ -535,22 +655,26 @@ def _run_observe_host(args: Namespace) -> int:
     _print_memory_observation_summary(memory_observation)
     _print_filesystem_observation_summary(filesystem_observation)
     _print_disk_io_observation_summary(disk_io_observation)
+    _print_network_observation_summary(network_observation)
 
     host_event = host_observation_to_event(host_observation)
     memory_event = memory_observation_to_event(memory_observation)
     filesystem_event = filesystem_observation_to_event(filesystem_observation)
     disk_io_event = disk_io_observation_to_event(disk_io_observation)
+    network_event = network_observation_to_event(network_observation)
 
     host_report = event_bus.publish(host_event)
     memory_report = event_bus.publish(memory_event)
     filesystem_event_report = event_bus.publish(filesystem_event)
     disk_io_report = event_bus.publish(disk_io_event)
+    network_report = event_bus.publish(network_event)
 
     reports = (
         host_report,
         memory_report,
         filesystem_event_report,
         disk_io_report,
+        network_report,
     )
 
     for report in reports:

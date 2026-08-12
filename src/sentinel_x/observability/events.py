@@ -8,6 +8,7 @@ from sentinel_x.core import EventKind, SentinelEvent
 from sentinel_x.observability.disk_io_sampling import DiskIoObservation
 from sentinel_x.observability.filesystem import FilesystemObservation
 from sentinel_x.observability.models import HostObservation, MemoryObservation
+from sentinel_x.observability.network_sampling import NetworkObservation
 
 
 HOST_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.host"
@@ -21,6 +22,9 @@ FILESYSTEM_OBSERVATION_TYPE: Final[str] = "linux.host.filesystem"
 
 DISK_IO_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.disk_io"
 DISK_IO_OBSERVATION_TYPE: Final[str] = "linux.host.disk_io"
+
+NETWORK_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.network"
+NETWORK_OBSERVATION_TYPE: Final[str] = "linux.host.network"
 
 
 def host_observation_to_event(
@@ -86,6 +90,23 @@ def disk_io_observation_to_event(
         kind=EventKind.OBSERVATION,
         source=DISK_IO_OBSERVATION_SOURCE,
         message="Linux host disk I/O observation collected.",
+        attributes=attributes,
+        occurred_at=observation.captured_at,
+    )
+
+
+def network_observation_to_event(
+    observation: NetworkObservation,
+) -> SentinelEvent:
+    """Convert one sampled network observation into a SentinelEvent."""
+
+    attributes = observation.to_dict()
+    attributes["observation_type"] = NETWORK_OBSERVATION_TYPE
+
+    return SentinelEvent(
+        kind=EventKind.OBSERVATION,
+        source=NETWORK_OBSERVATION_SOURCE,
+        message="Linux host network observation collected.",
         attributes=attributes,
         occurred_at=observation.captured_at,
     )

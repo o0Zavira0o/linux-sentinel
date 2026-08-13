@@ -9,6 +9,8 @@ from sentinel_x.observability.disk_io_sampling import DiskIoObservation
 from sentinel_x.observability.filesystem import FilesystemObservation
 from sentinel_x.observability.models import HostObservation, MemoryObservation
 from sentinel_x.observability.network_sampling import NetworkObservation
+from sentinel_x.observability.process_event import build_process_event_attributes
+from sentinel_x.observability.process_sampling import ProcessObservation
 
 
 HOST_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.host"
@@ -25,6 +27,9 @@ DISK_IO_OBSERVATION_TYPE: Final[str] = "linux.host.disk_io"
 
 NETWORK_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.network"
 NETWORK_OBSERVATION_TYPE: Final[str] = "linux.host.network"
+
+PROCESS_OBSERVATION_SOURCE: Final[str] = "sentinel_x.observability.process"
+PROCESS_OBSERVATION_TYPE: Final[str] = "linux.host.process"
 
 
 def host_observation_to_event(
@@ -107,6 +112,23 @@ def network_observation_to_event(
         kind=EventKind.OBSERVATION,
         source=NETWORK_OBSERVATION_SOURCE,
         message="Linux host network observation collected.",
+        attributes=attributes,
+        occurred_at=observation.captured_at,
+    )
+
+
+def process_observation_to_event(
+    observation: ProcessObservation,
+) -> SentinelEvent:
+    """Convert one sampled process observation into a bounded SentinelEvent."""
+
+    attributes = build_process_event_attributes(observation)
+    attributes["observation_type"] = PROCESS_OBSERVATION_TYPE
+
+    return SentinelEvent(
+        kind=EventKind.OBSERVATION,
+        source=PROCESS_OBSERVATION_SOURCE,
+        message="Linux host process observation collected.",
         attributes=attributes,
         occurred_at=observation.captured_at,
     )

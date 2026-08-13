@@ -35,26 +35,34 @@ from sentinel_x.observability import (
     LinuxHostReader,
     LinuxNetworkReader,
     LinuxObservationError,
+    LinuxProcessReader,
     MemoryObservation,
     NetworkObservation,
     NetworkObservationError,
     NetworkSampleStatus,
+    ProcessObservation,
+    ProcessObservationError,
+    ProcessSampleStatus,
     build_disk_io_observation,
     build_filesystem_observation,
     build_host_observation,
     build_memory_observation,
     build_network_observation,
+    build_process_observation,
     disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
     network_observation_to_event,
+    process_observation_to_event,
     validate_sample_interval,
 )
 from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
 
 
 _MINIMUM_PYTHON = (3, 11)
+_PROCESS_CLI_TOP_LIMIT = 10
+_PROCESS_CLI_EXCEPTION_LIMIT = 20
 
 
 def _add_config_argument(parser: ArgumentParser) -> None:
@@ -133,8 +141,8 @@ def _build_parser() -> ArgumentParser:
         type=float,
         default=1.0,
         help=(
-            "Delay between sampled CPU, disk I/O, and network counters. "
-            "Default: 1.0 second."
+            "Delay between sampled CPU, disk I/O, network, and process "
+            "counters. Default: 1.0 second."
         ),
     )
 
@@ -519,6 +527,134 @@ def _print_network_observation_summary(
             print(f"  metadata changes: {', '.join(changes)}")
 
 
+def _print_process_observation_summary(
+    observation: ProcessObservation,
+) -> None:
+    """Render sampled process metrics and lifecycle/data-quality evidence."""
+
+    print()
+    print("Sentinel-X process observation")
+    print("=" * 30)
+    print(f"Processes: {len(observation.samples)}")
+    print(f"Sampled: {observation.sampled_count}")
+    print(f"Started: {observation.started_count}")
+    print(f"Exited: {observation.exited_count}")
+    print(f"PID reused: {observation.pid_reused_count}")
+    print(f"Counter resets: {observation.counter_reset_count}")
+    print(f"Start unverified: {observation.start_unverified_count}")
+    print(f"Exit unverified: {observation.exit_unverified_count}")
+    print(
+        f"Context metrics unavailable: {observation.context_metrics_unavailable_count}"
+    )
+    print(f"I/O metrics unavailable: {observation.io_metrics_unavailable_count}")
+    print(f"Comm changed: {observation.comm_changed_count}")
+    print(f"Start dropped PIDs: {len(observation.start_dropped_failures)}")
+    print(f"End dropped PIDs: {len(observation.end_dropped_failures)}")
+
+    sampled = [
+        sample
+        for sample in observation.samples
+        if sample.status is ProcessSampleStatus.SAMPLED and sample.metrics is not None
+    ]
+    sampled.sort(
+        key=lambda sample: (
+            -sample.metrics.cpu.single_core_equivalent_percent
+            if sample.metrics is not None
+            else 0.0,
+            sample.identity.pid,
+        )
+    )
+
+    if sampled:
+        print()
+        print(f"Top CPU processes (max {_PROCESS_CLI_TOP_LIMIT}):")
+
+    for sample in sampled[:_PROCESS_CLI_TOP_LIMIT]:
+        metrics = sample.metrics
+
+        assert metrics is not None
+
+        resident_bytes = metrics.memory.resident_memory_bytes
+        resident = (
+            "n/a" if resident_bytes is None else f"{resident_bytes / (1024**2):.1f} MiB"
+        )
+        print(
+            f"- pid={sample.identity.pid} comm={sample.identity.comm!r} "
+            f"core={metrics.cpu.single_core_equivalent_percent:.2f}% "
+            f"host={metrics.cpu.host_capacity_percent:.3f}% "
+            f"rss={resident}"
+        )
+
+    exceptional = [
+        sample
+        for sample in observation.samples
+        if sample.status is not ProcessSampleStatus.SAMPLED
+        or sample.context_regressed_fields
+        or sample.io_regressed_fields
+        or sample.comm_changed
+        or sample.ppid_changed
+        or sample.effective_uid_changed
+        or sample.effective_gid_changed
+    ]
+    exceptional.sort(key=lambda sample: sample.identity.pid)
+
+    if exceptional:
+        print()
+        print(
+            "Process lifecycle/data-quality evidence "
+            f"(max {_PROCESS_CLI_EXCEPTION_LIMIT}):"
+        )
+
+    for sample in exceptional[:_PROCESS_CLI_EXCEPTION_LIMIT]:
+        print(
+            f"- pid={sample.identity.pid} comm={sample.identity.comm!r} "
+            f"[{sample.status.value}]"
+        )
+
+        details: list[str] = []
+
+        if sample.core_regressed_fields:
+            details.append("core regressions=" + ",".join(sample.core_regressed_fields))
+
+        if sample.context_regressed_fields:
+            details.append(
+                "context regressions=" + ",".join(sample.context_regressed_fields)
+            )
+
+        if sample.io_regressed_fields:
+            details.append("io regressions=" + ",".join(sample.io_regressed_fields))
+
+        changes: list[str] = []
+
+        if sample.comm_changed:
+            changes.append("comm")
+
+        if sample.ppid_changed:
+            changes.append("ppid")
+
+        if sample.effective_uid_changed:
+            changes.append("effective_uid")
+
+        if sample.effective_gid_changed:
+            changes.append("effective_gid")
+
+        if changes:
+            details.append("identity changes=" + ",".join(changes))
+
+        if sample.missing_endpoint_failure is not None:
+            failure = sample.missing_endpoint_failure
+            details.append(
+                f"missing endpoint={failure.stage.value}/{failure.error_type}"
+            )
+
+        if details:
+            print("  " + "; ".join(details))
+
+    if len(exceptional) > _PROCESS_CLI_EXCEPTION_LIMIT:
+        omitted = len(exceptional) - _PROCESS_CLI_EXCEPTION_LIMIT
+        print(f"  ... {omitted} additional evidence records omitted from CLI")
+
+
 def _run_observe_host(args: Namespace) -> int:
     """Collect, publish, and optionally persist Linux host observations."""
 
@@ -542,6 +678,7 @@ def _run_observe_host(args: Namespace) -> int:
     filesystem_reader = LinuxFilesystemReader()
     disk_io_reader = LinuxDiskStatsReader()
     network_reader = LinuxNetworkReader()
+    process_reader = LinuxProcessReader()
 
     try:
         previous = host_reader.read_snapshot()
@@ -553,6 +690,9 @@ def _run_observe_host(args: Namespace) -> int:
         previous_network = network_reader.read_snapshot()
         network_monotonic_start = time.monotonic()
 
+        previous_process = process_reader.read_snapshot()
+        process_monotonic_start = time.monotonic()
+
         time.sleep(requested_interval)
 
         current = host_reader.read_snapshot()
@@ -563,6 +703,9 @@ def _run_observe_host(args: Namespace) -> int:
 
         current_network = network_reader.read_snapshot()
         network_elapsed = time.monotonic() - network_monotonic_start
+
+        current_process = process_reader.read_snapshot()
+        process_elapsed = time.monotonic() - process_monotonic_start
 
         memory_stats = host_reader.read_memory_stats()
         memory_captured_at = datetime.now(timezone.utc)
@@ -598,6 +741,13 @@ def _run_observe_host(args: Namespace) -> int:
             sample_interval_seconds=network_elapsed,
         )
 
+        process_observation = build_process_observation(
+            previous_process,
+            current_process,
+            sample_interval_seconds=process_elapsed,
+            logical_cpu_count=current.identity.logical_cpu_count,
+        )
+
     except KeyboardInterrupt:
         print(
             "host observation interrupted",
@@ -612,6 +762,7 @@ def _run_observe_host(args: Namespace) -> int:
         FilesystemObservationError,
         DiskIoObservationError,
         NetworkObservationError,
+        ProcessObservationError,
     ) as exc:
         print(
             f"observation error: {exc}",
@@ -656,18 +807,21 @@ def _run_observe_host(args: Namespace) -> int:
     _print_filesystem_observation_summary(filesystem_observation)
     _print_disk_io_observation_summary(disk_io_observation)
     _print_network_observation_summary(network_observation)
+    _print_process_observation_summary(process_observation)
 
     host_event = host_observation_to_event(host_observation)
     memory_event = memory_observation_to_event(memory_observation)
     filesystem_event = filesystem_observation_to_event(filesystem_observation)
     disk_io_event = disk_io_observation_to_event(disk_io_observation)
     network_event = network_observation_to_event(network_observation)
+    process_event = process_observation_to_event(process_observation)
 
     host_report = event_bus.publish(host_event)
     memory_report = event_bus.publish(memory_event)
     filesystem_event_report = event_bus.publish(filesystem_event)
     disk_io_report = event_bus.publish(disk_io_event)
     network_report = event_bus.publish(network_event)
+    process_report = event_bus.publish(process_event)
 
     reports = (
         host_report,
@@ -675,6 +829,7 @@ def _run_observe_host(args: Namespace) -> int:
         filesystem_event_report,
         disk_io_report,
         network_report,
+        process_report,
     )
 
     for report in reports:

@@ -32,11 +32,14 @@ from sentinel_x.observability.events import (
     MEMORY_OBSERVATION_TYPE,
     NETWORK_OBSERVATION_SOURCE,
     NETWORK_OBSERVATION_TYPE,
+    PROCESS_OBSERVATION_SOURCE,
+    PROCESS_OBSERVATION_TYPE,
     disk_io_observation_to_event,
     filesystem_observation_to_event,
     host_observation_to_event,
     memory_observation_to_event,
     network_observation_to_event,
+    process_observation_to_event,
 )
 from sentinel_x.observability.filesystem import (
     FilesystemKind,
@@ -113,6 +116,15 @@ from sentinel_x.observability.process import (
     ProcessStat,
     ProcessStatus,
 )
+from sentinel_x.observability.process_event import (
+    PROCESS_EVENT_MAX_DROPPED_FAILURES,
+    PROCESS_EVENT_MAX_SAMPLES,
+    PROCESS_EVENT_PROJECTION_VERSION,
+    PROCESS_EVENT_TOP_CPU_LIMIT,
+    PROCESS_EVENT_TOP_IO_LIMIT,
+    PROCESS_EVENT_TOP_MEMORY_LIMIT,
+    build_process_event_attributes,
+)
 from sentinel_x.observability.process_sampling import (
     ProcessContextSwitchMetrics,
     ProcessCpuMetrics,
@@ -151,6 +163,14 @@ __all__ = [
     "MIN_SAMPLE_INTERVAL_SECONDS",
     "NETWORK_OBSERVATION_SOURCE",
     "NETWORK_OBSERVATION_TYPE",
+    "PROCESS_EVENT_MAX_DROPPED_FAILURES",
+    "PROCESS_EVENT_MAX_SAMPLES",
+    "PROCESS_EVENT_PROJECTION_VERSION",
+    "PROCESS_EVENT_TOP_CPU_LIMIT",
+    "PROCESS_EVENT_TOP_IO_LIMIT",
+    "PROCESS_EVENT_TOP_MEMORY_LIMIT",
+    "PROCESS_OBSERVATION_SOURCE",
+    "PROCESS_OBSERVATION_TYPE",
     "BlockDeviceIdentity",
     "BlockDeviceKind",
     "CpuSamplingError",
@@ -235,6 +255,7 @@ __all__ = [
     "build_host_observation",
     "build_memory_observation",
     "build_network_observation",
+    "build_process_event_attributes",
     "build_process_observation",
     "calculate_cpu_utilization",
     "calculate_filesystem_utilization",
@@ -244,5 +265,6 @@ __all__ = [
     "host_observation_to_event",
     "memory_observation_to_event",
     "network_observation_to_event",
+    "process_observation_to_event",
     "validate_sample_interval",
 ]

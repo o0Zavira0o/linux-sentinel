@@ -32,6 +32,16 @@ from sentinel_x.core.events import (
     EventSeverity,
     SentinelEvent,
 )
+from sentinel_x.core.registry import (
+    CollectorDefinition,
+    CollectorDefinitionValidationError,
+    CollectorRegistry,
+    CollectorRegistryBindingError,
+    CollectorRegistryError,
+    CollectorRuntimeSettings,
+    DuplicateCollectorDefinitionError,
+    UnknownCollectorDefinitionError,
+)
 from sentinel_x.core.scheduling import (
     CollectorDispatch,
     CollectorExecutionState,
@@ -54,6 +64,8 @@ from sentinel_x.core.state import (
 __all__ = [
     "AgentLifecycle",
     "AgentState",
+    "CollectorDefinition",
+    "CollectorDefinitionValidationError",
     "CollectorDispatch",
     "CollectorExecutionError",
     "CollectorExecutionFailure",
@@ -65,10 +77,15 @@ __all__ = [
     "CollectorExecutionStatus",
     "CollectorExecutionValidationError",
     "CollectorExecutor",
+    "CollectorRegistry",
+    "CollectorRegistryBindingError",
+    "CollectorRegistryError",
+    "CollectorRuntimeSettings",
     "CollectorSchedule",
     "CollectorScheduler",
     "CollectorScheduleSnapshot",
     "CollectorSpecMismatchError",
+    "DuplicateCollectorDefinitionError",
     "DuplicateScheduleError",
     "EngineRunConflictError",
     "EngineSnapshot",
@@ -86,6 +103,7 @@ __all__ = [
     "SentinelEngine",
     "SentinelEvent",
     "Subscription",
+    "UnknownCollectorDefinitionError",
     "UnknownExecutionStateError",
     "UnknownScheduleError",
 ]

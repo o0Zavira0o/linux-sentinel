@@ -13,15 +13,20 @@ from sentinel_x.config.loader import (
     load_config,
 )
 from sentinel_x.config.models import (
+    BUILTIN_HOST_COLLECTOR_NAMES,
     AgentConfig,
+    CollectorRuntimeConfig,
+    CollectorsConfig,
     ConfigValidationError,
     SentinelConfig,
     StorageConfig,
 )
 
-
 __all__ = [
     "AgentConfig",
+    "BUILTIN_HOST_COLLECTOR_NAMES",
+    "CollectorRuntimeConfig",
+    "CollectorsConfig",
     "ConfigError",
     "ConfigFileError",
     "ConfigParseError",

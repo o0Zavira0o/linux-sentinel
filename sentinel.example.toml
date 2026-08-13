@@ -2,8 +2,55 @@
 instance_name = "sentinel-x"
 tick_interval = 0.5
 
-
 [storage]
 enabled = true
 directory = "~/.local/state/sentinel-x/events"
 flush_on_write = true
+
+[collectors.cpu_load]
+enabled = true
+interval_seconds = 1.0
+initial_delay_seconds = 0.0
+budget_seconds = 0.25
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0
+
+[collectors.memory]
+enabled = true
+interval_seconds = 2.0
+initial_delay_seconds = 0.15
+budget_seconds = 0.10
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0
+
+[collectors.filesystem]
+enabled = true
+interval_seconds = 10.0
+initial_delay_seconds = 0.75
+budget_seconds = 0.50
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0
+
+[collectors.disk_io]
+enabled = true
+interval_seconds = 1.0
+initial_delay_seconds = 0.30
+budget_seconds = 0.25
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0
+
+[collectors.network]
+enabled = true
+interval_seconds = 1.0
+initial_delay_seconds = 0.45
+budget_seconds = 0.25
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0
+
+[collectors.process]
+enabled = true
+interval_seconds = 5.0
+initial_delay_seconds = 0.60
+budget_seconds = 1.0
+failure_backoff_initial_seconds = 1.0
+failure_backoff_max_seconds = 8.0

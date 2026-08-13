@@ -164,6 +164,159 @@ class ConfigLoaderTests(unittest.TestCase):
             with self.assertRaises(ConfigSchemaError):
                 load_config(config_path)
 
+    def test_default_collector_configuration_is_typed_and_staggered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(tmpdir)
+                loaded = load_config()
+            finally:
+                os.chdir(original_cwd)
+
+        collectors = loaded.config.collectors
+        self.assertEqual(collectors.cpu_load.interval_seconds, 1.0)
+        self.assertEqual(collectors.memory.interval_seconds, 2.0)
+        self.assertEqual(collectors.filesystem.interval_seconds, 10.0)
+        self.assertEqual(collectors.disk_io.interval_seconds, 1.0)
+        self.assertEqual(collectors.network.interval_seconds, 1.0)
+        self.assertEqual(collectors.process.interval_seconds, 5.0)
+        self.assertLess(
+            collectors.cpu_load.initial_delay_seconds,
+            collectors.process.initial_delay_seconds,
+        )
+
+    def test_explicit_collector_overrides_are_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collectors.toml"
+            config_path.write_text(
+                (
+                    "[collectors.process]\n"
+                    "enabled = false\n"
+                    "interval_seconds = 15.0\n"
+                    "initial_delay_seconds = 2.0\n"
+                    "budget_seconds = 2.5\n"
+                    "failure_backoff_initial_seconds = 3.0\n"
+                    "failure_backoff_max_seconds = 12.0\n"
+                ),
+                encoding="utf-8",
+            )
+
+            loaded = load_config(config_path)
+
+        process = loaded.config.collectors.process
+        self.assertFalse(process.enabled)
+        self.assertEqual(process.interval_seconds, 15.0)
+        self.assertEqual(process.initial_delay_seconds, 2.0)
+        self.assertEqual(process.budget_seconds, 2.5)
+        self.assertEqual(process.failure_backoff_initial_seconds, 3.0)
+        self.assertEqual(process.failure_backoff_max_seconds, 12.0)
+
+    def test_partial_collector_override_keeps_other_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "partial.toml"
+            config_path.write_text(
+                "[collectors.network]\ninterval_seconds = 3.0\n",
+                encoding="utf-8",
+            )
+
+            loaded = load_config(config_path)
+
+        self.assertEqual(loaded.config.collectors.network.interval_seconds, 3.0)
+        self.assertEqual(loaded.config.collectors.network.budget_seconds, 0.25)
+        self.assertEqual(loaded.config.collectors.cpu_load.interval_seconds, 1.0)
+
+    def test_unknown_collector_name_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "unknown-collector.toml"
+            config_path.write_text(
+                "[collectors.gpu]\ninterval_seconds = 1.0\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_unknown_collector_key_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "unknown-collector-key.toml"
+            config_path.write_text(
+                "[collectors.cpu_load]\ninterval = 1.0\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_non_table_collector_entry_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collector-not-table.toml"
+            config_path.write_text(
+                "collectors = { process = 1 }\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_invalid_collector_enabled_type_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collector-enabled.toml"
+            config_path.write_text(
+                '[collectors.memory]\nenabled = "yes"\n',
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_too_fast_collector_interval_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collector-fast.toml"
+            config_path.write_text(
+                "[collectors.cpu_load]\ninterval_seconds = 0.001\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_nonpositive_collector_budget_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collector-budget.toml"
+            config_path.write_text(
+                "[collectors.process]\nbudget_seconds = 0.0\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_invalid_collector_backoff_pair_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collector-backoff.toml"
+            config_path.write_text(
+                (
+                    "[collectors.disk_io]\n"
+                    "failure_backoff_initial_seconds = 4.0\n"
+                    "failure_backoff_max_seconds = 2.0\n"
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_collectors_root_must_be_a_table(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "collectors-root.toml"
+            config_path.write_text(
+                "collectors = 1\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
 
 if __name__ == "__main__":
     unittest.main()

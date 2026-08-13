@@ -7,6 +7,17 @@ from sentinel_x.systemd.models import (
     SystemdUnitNameError,
     validate_service_unit_name,
 )
+from sentinel_x.systemd.observation import (
+    SYSTEMD_SERVICE_OBSERVATION_SOURCE,
+    SYSTEMD_SERVICE_OBSERVATION_TYPE,
+    ConfiguredSystemdServiceCollectors,
+    SystemdServiceCollector,
+    SystemdServiceCollectorBindingError,
+    SystemdServiceCollectorError,
+    SystemdServiceEmission,
+    SystemdServiceSnapshotReader,
+    systemd_service_snapshot_to_event,
+)
 from sentinel_x.systemd.reader import (
     SystemctlCommandResult,
     SystemctlCommandRunner,
@@ -19,6 +30,15 @@ from sentinel_x.systemd.reader import (
 )
 
 __all__ = [
+    "ConfiguredSystemdServiceCollectors",
+    "SYSTEMD_SERVICE_OBSERVATION_SOURCE",
+    "SYSTEMD_SERVICE_OBSERVATION_TYPE",
+    "SystemdServiceCollector",
+    "SystemdServiceCollectorBindingError",
+    "SystemdServiceCollectorError",
+    "SystemdServiceEmission",
+    "SystemdServiceSnapshotReader",
+    "systemd_service_snapshot_to_event",
     "SystemctlCommandResult",
     "SystemctlCommandRunner",
     "SystemctlServiceReader",

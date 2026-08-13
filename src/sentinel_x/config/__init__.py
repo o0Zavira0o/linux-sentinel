@@ -14,17 +14,21 @@ from sentinel_x.config.loader import (
 )
 from sentinel_x.config.models import (
     BUILTIN_HOST_COLLECTOR_NAMES,
+    MAX_SYSTEMD_SERVICE_TARGETS,
     AgentConfig,
     CollectorRuntimeConfig,
     CollectorsConfig,
     ConfigValidationError,
     SentinelConfig,
     StorageConfig,
+    SystemdConfig,
+    SystemdServiceTargetConfig,
 )
 
 __all__ = [
     "AgentConfig",
     "BUILTIN_HOST_COLLECTOR_NAMES",
+    "MAX_SYSTEMD_SERVICE_TARGETS",
     "CollectorRuntimeConfig",
     "CollectorsConfig",
     "ConfigError",
@@ -37,5 +41,7 @@ __all__ = [
     "MAX_CONFIG_BYTES",
     "SentinelConfig",
     "StorageConfig",
+    "SystemdConfig",
+    "SystemdServiceTargetConfig",
     "load_config",
 ]

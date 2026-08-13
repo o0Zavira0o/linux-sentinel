@@ -54,3 +54,16 @@ initial_delay_seconds = 0.60
 budget_seconds = 1.0
 failure_backoff_initial_seconds = 1.0
 failure_backoff_max_seconds = 8.0
+
+# Optional read-only systemd service observations.
+# Each configured target becomes an independently scheduled collector.
+# At most 16 service targets are accepted.
+#
+# [[systemd.services]]
+# unit_name = "systemd-journald.service"
+# enabled = true
+# interval_seconds = 5.0
+# initial_delay_seconds = 1.0
+# budget_seconds = 0.75
+# failure_backoff_initial_seconds = 2.0
+# failure_backoff_max_seconds = 16.0

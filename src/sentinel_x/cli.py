@@ -24,6 +24,7 @@ from sentinel_x.core import (
     CollectorDefinitionValidationError,
     CollectorRegistry,
     CollectorRegistryError,
+    CollectorRuntimeSettings,
     EventBus,
     SentinelEngine,
     SentinelEvent,
@@ -65,6 +66,10 @@ from sentinel_x.observability import (
     network_observation_to_event,
     process_observation_to_event,
     validate_sample_interval,
+)
+from sentinel_x.systemd import (
+    ConfiguredSystemdServiceCollectors,
+    SystemdServiceCollectorError,
 )
 from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
 
@@ -261,6 +266,7 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Event storage: {'enabled' if config.storage.enabled else 'disabled'}")
     print(f"Storage directory: {loaded.resolve_path(config.storage.directory)}")
     print(f"Flush on write: {config.storage.flush_on_write}")
+    print(f"Systemd service targets: {len(config.systemd.services)}")
 
     return 0
 
@@ -907,14 +913,23 @@ def _run_engine(args: Namespace) -> int:
 
     try:
         builtin_collectors = build_builtin_host_collectors()
+        systemd_collectors = ConfiguredSystemdServiceCollectors(
+            config.systemd.bindings()
+        )
+        collector_settings: list[tuple[str, CollectorRuntimeSettings]] = []
+        collector_settings.extend(config.collectors.items())
+        collector_settings.extend(config.systemd.items())
+        collector_handlers = dict(builtin_collectors.handlers())
+        collector_handlers.update(systemd_collectors.handlers())
         collector_registry = CollectorRegistry.from_settings(
-            config.collectors.items(),
-            builtin_collectors.handlers(),
+            collector_settings,
+            collector_handlers,
         )
     except (
         CollectorDefinitionValidationError,
         CollectorRegistryError,
         RuntimeCollectorError,
+        SystemdServiceCollectorError,
     ) as exc:
         print(
             f"runtime setup error: {exc}",
@@ -927,6 +942,7 @@ def _run_engine(args: Namespace) -> int:
         f"{collector_registry.enabled_count} enabled, "
         f"{collector_registry.disabled_count} disabled"
     )
+    print(f"Systemd service targets: {len(config.systemd.services)}")
 
     event_bus = EventBus()
     event_bus.subscribe(_print_event)

@@ -317,6 +317,191 @@ class ConfigLoaderTests(unittest.TestCase):
             with self.assertRaises(ConfigSchemaError):
                 load_config(config_path)
 
+    def test_default_systemd_service_targets_are_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(tmpdir)
+                loaded = load_config()
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertEqual(loaded.config.systemd.services, ())
+        self.assertEqual(loaded.config.systemd.items(), ())
+        self.assertEqual(loaded.config.systemd.bindings(), ())
+
+    def test_explicit_systemd_service_target_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "systemd-journald.service"\n'
+                    "enabled = true\n"
+                    "interval_seconds = 7.0\n"
+                    "initial_delay_seconds = 1.5\n"
+                    "budget_seconds = 0.9\n"
+                    "failure_backoff_initial_seconds = 3.0\n"
+                    "failure_backoff_max_seconds = 12.0\n"
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertEqual(target.unit_name, "systemd-journald.service")
+        self.assertTrue(target.enabled)
+        self.assertEqual(target.interval_seconds, 7.0)
+        self.assertEqual(target.initial_delay_seconds, 1.5)
+        self.assertEqual(target.budget_seconds, 0.9)
+        self.assertEqual(target.failure_backoff_initial_seconds, 3.0)
+        self.assertEqual(target.failure_backoff_max_seconds, 12.0)
+
+    def test_systemd_service_targets_preserve_declared_order(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-order.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "\n"
+                    "[[systemd.services]]\n"
+                    'unit_name = "systemd-journald.service"\n'
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        self.assertEqual(
+            tuple(target.unit_name for target in loaded.config.systemd.services),
+            ("sshd.service", "systemd-journald.service"),
+        )
+        collector_names = tuple(name for name, _ in loaded.config.systemd.items())
+        self.assertEqual(len(set(collector_names)), 2)
+
+    def test_duplicate_systemd_service_targets_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-duplicate.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "\n"
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_unsafe_systemd_service_target_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-unsafe.toml"
+            config_path.write_text(
+                ('[[systemd.services]]\nunit_name = "../evil.service"\n'),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_too_fast_systemd_service_interval_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-fast.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "interval_seconds = 0.5\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_unknown_systemd_key_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-key.toml"
+            config_path.write_text(
+                '[systemd]\nmode = "unsafe"\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_systemd_services_must_be_array_of_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-shape.toml"
+            config_path.write_text(
+                '[systemd]\nservices = "sshd.service"\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_systemd_service_entry_must_be_table(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-entry.toml"
+            config_path.write_text(
+                '[systemd]\nservices = ["sshd.service"]\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_unknown_systemd_service_key_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-service-key.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    'command = "restart"\n'
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_systemd_service_target_limit_is_enforced(self) -> None:
+        entries = []
+        for index in range(17):
+            entries.append(
+                f'[[systemd.services]]\nunit_name = "sentinel-test-{index}.service"\n'
+            )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-limit.toml"
+            config_path.write_text("\n".join(entries), encoding="utf-8")
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_disabled_systemd_service_target_is_retained(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-disabled.toml"
+            config_path.write_text(
+                ('[[systemd.services]]\nunit_name = "sshd.service"\nenabled = false\n'),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertFalse(target.enabled)
+        self.assertEqual(len(loaded.config.systemd.items()), 1)
+
+    def test_templated_systemd_unit_gets_scheduler_safe_collector_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-template.toml"
+            config_path.write_text(
+                ('[[systemd.services]]\nunit_name = "getty@tty1.service"\n'),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        collector_name = loaded.config.systemd.services[0].collector_name
+        self.assertLessEqual(len(collector_name), 64)
+        self.assertNotIn("@", collector_name)
+        self.assertTrue(collector_name.startswith("systemd."))
+
 
 if __name__ == "__main__":
     unittest.main()

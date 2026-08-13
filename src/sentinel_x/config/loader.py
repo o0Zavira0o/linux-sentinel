@@ -15,6 +15,8 @@ from sentinel_x.config.models import (
     ConfigValidationError,
     SentinelConfig,
     StorageConfig,
+    SystemdConfig,
+    SystemdServiceTargetConfig,
 )
 
 DEFAULT_CONFIG_FILENAME = "sentinel.toml"
@@ -133,13 +135,14 @@ def _parse_root(raw_config: Mapping[str, Any]) -> SentinelConfig:
 
     _reject_unknown_keys(
         mapping=raw_config,
-        allowed={"agent", "storage", "collectors"},
+        allowed={"agent", "storage", "collectors", "systemd"},
         context="root",
     )
 
     raw_agent = raw_config.get("agent", {})
     raw_storage = raw_config.get("storage", {})
     raw_collectors = raw_config.get("collectors", {})
+    raw_systemd = raw_config.get("systemd", {})
 
     if not isinstance(raw_agent, dict):
         raise ConfigSchemaError("[agent] must be a TOML table")
@@ -147,11 +150,14 @@ def _parse_root(raw_config: Mapping[str, Any]) -> SentinelConfig:
         raise ConfigSchemaError("[storage] must be a TOML table")
     if not isinstance(raw_collectors, dict):
         raise ConfigSchemaError("[collectors] must be a TOML table")
+    if not isinstance(raw_systemd, dict):
+        raise ConfigSchemaError("[systemd] must be a TOML table")
 
     return SentinelConfig(
         agent=_parse_agent(raw_agent),
         storage=_parse_storage(raw_storage),
         collectors=_parse_collectors(raw_collectors),
+        systemd=_parse_systemd(raw_systemd),
     )
 
 
@@ -287,6 +293,75 @@ def _parse_collector_entry(
             failure_backoff_max_seconds=raw_entry.get(
                 "failure_backoff_max_seconds",
                 defaults.failure_backoff_max_seconds,
+            ),
+        )
+    except ConfigValidationError as exc:
+        raise ConfigSchemaError(f"{context}: {exc}") from exc
+
+
+def _parse_systemd(raw_systemd: Mapping[str, Any]) -> SystemdConfig:
+    """Parse bounded read-only systemd service observation targets."""
+
+    _reject_unknown_keys(
+        mapping=raw_systemd,
+        allowed={"services"},
+        context="systemd",
+    )
+    raw_services = raw_systemd.get("services", [])
+    if not isinstance(raw_services, list):
+        raise ConfigSchemaError("systemd.services must be an array of tables")
+
+    services: list[SystemdServiceTargetConfig] = []
+    for index, raw_service in enumerate(raw_services):
+        services.append(_parse_systemd_service_target(raw_service, index=index))
+
+    try:
+        return SystemdConfig(services=tuple(services))
+    except ConfigValidationError as exc:
+        raise ConfigSchemaError(str(exc)) from exc
+
+
+def _parse_systemd_service_target(
+    raw_service: object,
+    *,
+    index: int,
+) -> SystemdServiceTargetConfig:
+    """Parse one [[systemd.services]] target with strict keys and defaults."""
+
+    context = f"systemd.services[{index}]"
+    if not isinstance(raw_service, dict):
+        raise ConfigSchemaError(f"{context} must be a TOML table")
+    _reject_unknown_keys(
+        mapping=raw_service,
+        allowed={
+            "unit_name",
+            "enabled",
+            "interval_seconds",
+            "initial_delay_seconds",
+            "budget_seconds",
+            "failure_backoff_initial_seconds",
+            "failure_backoff_max_seconds",
+        },
+        context=context,
+    )
+
+    try:
+        return SystemdServiceTargetConfig(
+            unit_name=raw_service.get("unit_name", ""),
+            enabled=raw_service.get("enabled", True),
+            interval_seconds=raw_service.get("interval_seconds", 5.0),
+            initial_delay_seconds=raw_service.get(
+                "initial_delay_seconds",
+                1.0,
+            ),
+            budget_seconds=raw_service.get("budget_seconds", 0.75),
+            failure_backoff_initial_seconds=raw_service.get(
+                "failure_backoff_initial_seconds",
+                2.0,
+            ),
+            failure_backoff_max_seconds=raw_service.get(
+                "failure_backoff_max_seconds",
+                16.0,
             ),
         )
     except ConfigValidationError as exc:

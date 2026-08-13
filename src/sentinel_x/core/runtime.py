@@ -56,6 +56,21 @@ class CollectorEmissionResult(Protocol):
         """Return the emitted event, or None for a successful warm-up."""
 
 
+@runtime_checkable
+class CollectorPublicationTransaction(Protocol):
+    """Optional acknowledgment hooks for stateful collector publication."""
+
+    def commit_publication(self) -> None:
+        """Commit collector state after successful publication."""
+
+        ...
+
+    def rollback_publication(self) -> None:
+        """Retain or restore collector state after publication failure."""
+
+        ...
+
+
 @dataclass(frozen=True, slots=True)
 class CollectorRuntimeCycle:
     """Bounded result of one due-dispatch polling cycle."""
@@ -300,7 +315,27 @@ class CollectorRuntime:
             )
 
         report = self._event_bus.publish(event)
+        if isinstance(result, CollectorPublicationTransaction):
+            self._acknowledge_publication(result, report)
         return 1, 0, len(report.failures)
+
+    @staticmethod
+    def _acknowledge_publication(
+        transaction: CollectorPublicationTransaction,
+        report: PublishReport,
+    ) -> None:
+        """Commit or roll back stateful collector progress after publication."""
+
+        try:
+            if report.succeeded:
+                transaction.commit_publication()
+            else:
+                transaction.rollback_publication()
+        except Exception as exc:
+            action = "commit" if report.succeeded else "rollback"
+            raise CollectorRuntimeContractError(
+                f"collector publication transaction failed to {action}"
+            ) from exc
 
     def _publish_execution_diagnostic(
         self,

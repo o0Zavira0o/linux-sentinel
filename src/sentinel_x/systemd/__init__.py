@@ -11,6 +11,20 @@ from sentinel_x.systemd.journal_models import (
     SystemdJournalModelError,
     validate_journal_cursor,
 )
+from sentinel_x.systemd.journal_observation import (
+    SYSTEMD_JOURNAL_OBSERVATION_SOURCE,
+    SYSTEMD_JOURNAL_OBSERVATION_TYPE,
+    StatefulSystemdJournalCollector,
+    SystemBootIdReader,
+    SystemdJournalBatchReader,
+    SystemdJournalCollectorContractError,
+    SystemdJournalCollectorError,
+    SystemdJournalCollectorSnapshot,
+    SystemdJournalCollectorStateError,
+    SystemdJournalEmission,
+    read_current_boot_id,
+    systemd_journal_batch_to_event,
+)
 from sentinel_x.systemd.journal_reader import (
     JournalClock,
     JournalctlCommandResult,
@@ -52,6 +66,16 @@ from sentinel_x.systemd.reader import (
 )
 
 __all__ = [
+    "SYSTEMD_JOURNAL_OBSERVATION_SOURCE",
+    "SYSTEMD_JOURNAL_OBSERVATION_TYPE",
+    "StatefulSystemdJournalCollector",
+    "SystemBootIdReader",
+    "SystemdJournalBatchReader",
+    "SystemdJournalCollectorContractError",
+    "SystemdJournalCollectorError",
+    "SystemdJournalCollectorSnapshot",
+    "SystemdJournalCollectorStateError",
+    "SystemdJournalEmission",
     "JournalAtom",
     "JournalClock",
     "JournalField",
@@ -90,6 +114,8 @@ __all__ = [
     "SystemdReadError",
     "SystemdServiceSnapshot",
     "SystemdUnitNameError",
+    "read_current_boot_id",
+    "systemd_journal_batch_to_event",
     "validate_journal_cursor",
     "validate_service_unit_name",
 ]

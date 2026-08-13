@@ -44,6 +44,7 @@ from sentinel_x.core.registry import (
 )
 from sentinel_x.core.runtime import (
     CollectorEmissionResult,
+    CollectorPublicationTransaction,
     CollectorRuntime,
     CollectorRuntimeClockError,
     CollectorRuntimeContractError,
@@ -90,6 +91,7 @@ __all__ = [
     "CollectorRegistryBindingError",
     "CollectorRegistryError",
     "CollectorEmissionResult",
+    "CollectorPublicationTransaction",
     "CollectorRuntime",
     "CollectorRuntimeClockError",
     "CollectorRuntimeContractError",

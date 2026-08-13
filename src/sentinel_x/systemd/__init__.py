@@ -4,6 +4,16 @@ from sentinel_x.systemd.journal_binding import (
     ConfiguredSystemdJournalCollectors,
     SystemdJournalCollectorBindingError,
 )
+from sentinel_x.systemd.journal_checkpoint import (
+    SYSTEMD_JOURNAL_CHECKPOINT_SCHEMA_VERSION,
+    AtomicSystemdJournalCheckpointStore,
+    SystemdJournalCheckpoint,
+    SystemdJournalCheckpointError,
+    SystemdJournalCheckpointStorageError,
+    SystemdJournalCheckpointStore,
+    SystemdJournalCheckpointValidationError,
+    build_journal_checkpoint,
+)
 from sentinel_x.systemd.journal_models import (
     JournalAtom,
     JournalField,
@@ -16,6 +26,7 @@ from sentinel_x.systemd.journal_models import (
     validate_journal_cursor,
 )
 from sentinel_x.systemd.journal_observation import (
+    SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE,
     SYSTEMD_JOURNAL_OBSERVATION_SOURCE,
     SYSTEMD_JOURNAL_OBSERVATION_TYPE,
     StatefulSystemdJournalCollector,
@@ -36,6 +47,7 @@ from sentinel_x.systemd.journal_reader import (
     JournalctlServiceReader,
     SystemdJournalCommandError,
     SystemdJournalCommandTimeoutError,
+    SystemdJournalCursorUnavailableError,
     SystemdJournalExecutableNotFoundError,
     SystemdJournalProtocolError,
     SystemdJournalReadError,
@@ -70,7 +82,10 @@ from sentinel_x.systemd.reader import (
 )
 
 __all__ = [
+    "AtomicSystemdJournalCheckpointStore",
     "ConfiguredSystemdJournalCollectors",
+    "SYSTEMD_JOURNAL_CHECKPOINT_SCHEMA_VERSION",
+    "SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE",
     "SYSTEMD_JOURNAL_OBSERVATION_SOURCE",
     "SYSTEMD_JOURNAL_OBSERVATION_TYPE",
     "StatefulSystemdJournalCollector",
@@ -100,7 +115,13 @@ __all__ = [
     "SystemdJournalBatch",
     "SystemdJournalCommandError",
     "SystemdJournalCommandTimeoutError",
+    "SystemdJournalCheckpoint",
+    "SystemdJournalCheckpointError",
+    "SystemdJournalCheckpointStorageError",
+    "SystemdJournalCheckpointStore",
+    "SystemdJournalCheckpointValidationError",
     "SystemdJournalCursorError",
+    "SystemdJournalCursorUnavailableError",
     "SystemdJournalEntry",
     "SystemdJournalExecutableNotFoundError",
     "SystemdJournalFieldError",
@@ -120,6 +141,7 @@ __all__ = [
     "SystemdReadError",
     "SystemdServiceSnapshot",
     "SystemdUnitNameError",
+    "build_journal_checkpoint",
     "read_current_boot_id",
     "systemd_journal_batch_to_event",
     "validate_journal_cursor",

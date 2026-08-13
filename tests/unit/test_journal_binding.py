@@ -9,6 +9,7 @@ from unittest.mock import patch
 from sentinel_x.systemd import (
     ConfiguredSystemdJournalCollectors,
     SystemdJournalBatch,
+    SystemdJournalCheckpoint,
     SystemdJournalCollectorBindingError,
 )
 
@@ -45,6 +46,25 @@ class _BootReader:
     def __call__(self) -> str:
         self.calls += 1
         return _BOOT_ID
+
+
+class _CheckpointStore:
+    def __init__(self) -> None:
+        self.values: dict[str, SystemdJournalCheckpoint] = {}
+        self.loads: list[tuple[str, str]] = []
+        self.saves: list[str] = []
+
+    def load(
+        self,
+        collector_name: str,
+        unit_name: str,
+    ) -> SystemdJournalCheckpoint | None:
+        self.loads.append((collector_name, unit_name))
+        return self.values.get(collector_name)
+
+    def save(self, checkpoint: SystemdJournalCheckpoint) -> None:
+        self.values[checkpoint.collector_name] = checkpoint
+        self.saves.append(checkpoint.collector_name)
 
 
 class ConfiguredJournalCollectorTests(unittest.TestCase):
@@ -187,6 +207,49 @@ class ConfiguredJournalCollectorTests(unittest.TestCase):
                 reader=_RecordingReader(),
                 boot_id_reader=object(),
             )
+
+    def test_shared_checkpoint_store_is_passed_to_all_collectors(self) -> None:
+        store = _CheckpointStore()
+        configured = ConfiguredSystemdJournalCollectors(
+            (
+                ("journal.alpha.aaaaaaaaaaaa", "alpha.service", 4),
+                ("journal.beta.bbbbbbbbbbbb", "beta.service", 4),
+            ),
+            reader=_RecordingReader(),
+            boot_id_reader=_BootReader(),
+            checkpoint_store=store,
+        )
+
+        first, second = configured.collectors()
+        first.collect()
+        second.collect()
+
+        self.assertEqual(
+            store.loads,
+            [
+                ("journal.alpha.aaaaaaaaaaaa", "alpha.service"),
+                ("journal.beta.bbbbbbbbbbbb", "beta.service"),
+            ],
+        )
+        self.assertEqual(
+            store.saves,
+            [
+                "journal.alpha.aaaaaaaaaaaa",
+                "journal.beta.bbbbbbbbbbbb",
+            ],
+        )
+
+    def test_empty_bindings_do_not_touch_injected_checkpoint_store(self) -> None:
+        store = _CheckpointStore()
+
+        configured = ConfiguredSystemdJournalCollectors(
+            (),
+            checkpoint_store=store,
+        )
+
+        self.assertEqual(configured.collectors(), ())
+        self.assertEqual(store.loads, [])
+        self.assertEqual(store.saves, [])
 
     def test_distinct_collectors_keep_independent_cursor_state(self) -> None:
         reader = _RecordingReader()

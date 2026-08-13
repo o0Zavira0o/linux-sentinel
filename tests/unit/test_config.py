@@ -676,6 +676,67 @@ class ConfigLoaderTests(unittest.TestCase):
             with self.assertRaises(ConfigSchemaError):
                 load_config(config_path)
 
+    def test_default_journal_checkpoint_policy_is_enabled_and_separate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-checkpoint-default.toml"
+            config_path.write_text("[systemd]\n", encoding="utf-8")
+            loaded = load_config(config_path)
+
+        systemd = loaded.config.systemd
+        self.assertTrue(systemd.journal_checkpoint_enabled)
+        self.assertEqual(
+            systemd.journal_checkpoint_directory,
+            "~/.local/state/sentinel-x/journal-checkpoints",
+        )
+
+    def test_explicit_journal_checkpoint_policy_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-checkpoint.toml"
+            config_path.write_text(
+                (
+                    "[systemd]\n"
+                    "journal_checkpoint_enabled = false\n"
+                    'journal_checkpoint_directory = "./cursor-state"\n'
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        self.assertFalse(loaded.config.systemd.journal_checkpoint_enabled)
+        self.assertEqual(
+            loaded.config.systemd.journal_checkpoint_directory,
+            "./cursor-state",
+        )
+
+    def test_invalid_journal_checkpoint_enabled_type_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-checkpoint-enabled.toml"
+            config_path.write_text(
+                '[systemd]\njournal_checkpoint_enabled = "yes"\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_empty_journal_checkpoint_directory_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-checkpoint-empty.toml"
+            config_path.write_text(
+                '[systemd]\njournal_checkpoint_directory = "   "\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_journal_checkpoint_directory_rejects_nul(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-checkpoint-nul.toml"
+            config_path.write_bytes(
+                b'[systemd]\njournal_checkpoint_directory = "bad\x00path"\n'
+            )
+            with self.assertRaises((ConfigParseError, ConfigSchemaError)):
+                load_config(config_path)
+
 
 if __name__ == "__main__":
     unittest.main()

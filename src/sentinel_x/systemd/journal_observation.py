@@ -9,13 +9,25 @@ from pathlib import Path
 from threading import RLock
 from typing import Final, Protocol
 
-from sentinel_x.core.events import EventKind, SentinelEvent
+from sentinel_x.core.events import EventKind, EventSeverity, SentinelEvent
+from sentinel_x.systemd.journal_checkpoint import (
+    SystemdJournalCheckpoint,
+    SystemdJournalCheckpointError,
+    SystemdJournalCheckpointStore,
+    build_journal_checkpoint,
+)
 from sentinel_x.systemd.journal_models import SystemdJournalBatch, SystemdJournalEntry
-from sentinel_x.systemd.journal_reader import JournalctlServiceReader
+from sentinel_x.systemd.journal_reader import (
+    JournalctlServiceReader,
+    SystemdJournalCursorUnavailableError,
+)
 from sentinel_x.systemd.models import validate_service_unit_name
 
 SYSTEMD_JOURNAL_OBSERVATION_SOURCE: Final[str] = "sentinel_x.systemd.journal"
 SYSTEMD_JOURNAL_OBSERVATION_TYPE: Final[str] = "linux.systemd.journal"
+SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE: Final[str] = (
+    "linux.systemd.journal_continuity"
+)
 _DEFAULT_MAX_ENTRIES: Final[int] = 64
 _MAX_MAX_ENTRIES: Final[int] = 64
 _MAX_MESSAGE_CHARS: Final[int] = 1024
@@ -84,6 +96,8 @@ class SystemdJournalCollectorSnapshot:
     committed_boot_id: str | None
     committed_cursor: str | None
     pending_publication: bool
+    checkpoint_enabled: bool
+    checkpoint_restored: bool
     invocation_count: int
     reader_call_count: int
     empty_poll_count: int
@@ -93,6 +107,11 @@ class SystemdJournalCollectorSnapshot:
     publication_rollback_count: int
     boot_reset_count: int
     read_failure_count: int
+    checkpoint_load_count: int
+    checkpoint_save_count: int
+    checkpoint_failure_count: int
+    continuity_event_count: int
+    cursor_recovery_count: int
 
     def to_dict(self) -> dict[str, object]:
         """Return serialization-friendly collector state."""
@@ -103,6 +122,8 @@ class SystemdJournalCollectorSnapshot:
             "committed_boot_id": self.committed_boot_id,
             "committed_cursor": self.committed_cursor,
             "pending_publication": self.pending_publication,
+            "checkpoint_enabled": self.checkpoint_enabled,
+            "checkpoint_restored": self.checkpoint_restored,
             "invocation_count": self.invocation_count,
             "reader_call_count": self.reader_call_count,
             "empty_poll_count": self.empty_poll_count,
@@ -112,6 +133,11 @@ class SystemdJournalCollectorSnapshot:
             "publication_rollback_count": self.publication_rollback_count,
             "boot_reset_count": self.boot_reset_count,
             "read_failure_count": self.read_failure_count,
+            "checkpoint_load_count": self.checkpoint_load_count,
+            "checkpoint_save_count": self.checkpoint_save_count,
+            "checkpoint_failure_count": self.checkpoint_failure_count,
+            "continuity_event_count": self.continuity_event_count,
+            "cursor_recovery_count": self.cursor_recovery_count,
         }
 
 
@@ -191,7 +217,7 @@ class SystemdJournalEmission:
 
 
 class StatefulSystemdJournalCollector:
-    """Collect journal evidence while committing cursors only after publication."""
+    """Collect journal evidence with acknowledged and durable cursor progress."""
 
     def __init__(
         self,
@@ -201,6 +227,7 @@ class StatefulSystemdJournalCollector:
         reader: SystemdJournalBatchReader | None = None,
         boot_id_reader: SystemBootIdReader = read_current_boot_id,
         max_entries: int = _DEFAULT_MAX_ENTRIES,
+        checkpoint_store: SystemdJournalCheckpointStore | None = None,
     ) -> None:
         self._collector_name = _validate_collector_name(collector_name)
         self._unit_name = validate_service_unit_name(unit_name, field_name="unit_name")
@@ -211,9 +238,16 @@ class StatefulSystemdJournalCollector:
             raise TypeError("boot_id_reader must be callable")
         self._boot_id_reader = boot_id_reader
         self._max_entries = _validate_max_entries(max_entries)
+        if checkpoint_store is not None:
+            if not callable(getattr(checkpoint_store, "load", None)):
+                raise TypeError("checkpoint_store.load must be callable")
+            if not callable(getattr(checkpoint_store, "save", None)):
+                raise TypeError("checkpoint_store.save must be callable")
+        self._checkpoint_store = checkpoint_store
         self._lock = RLock()
         self._committed_boot_id: str | None = None
         self._committed_cursor: str | None = None
+        self._checkpoint_restored = False
         self._pending: _PendingPublication | None = None
         self._next_token = 1
         self._invocation_count = 0
@@ -225,6 +259,12 @@ class StatefulSystemdJournalCollector:
         self._publication_rollback_count = 0
         self._boot_reset_count = 0
         self._read_failure_count = 0
+        self._checkpoint_load_count = 0
+        self._checkpoint_save_count = 0
+        self._checkpoint_failure_count = 0
+        self._continuity_event_count = 0
+        self._cursor_recovery_count = 0
+        self._restore_checkpoint()
 
     @property
     def name(self) -> str:
@@ -239,7 +279,7 @@ class StatefulSystemdJournalCollector:
         return self._unit_name
 
     def collect(self) -> SystemdJournalEmission:
-        """Read or retry one bounded journal evidence emission."""
+        """Read, recover, or retry one bounded journal evidence emission."""
 
         with self._lock:
             self._invocation_count += 1
@@ -252,17 +292,33 @@ class StatefulSystemdJournalCollector:
                 )
 
             current_boot_id = _normalize_boot_id(self._boot_id_reader())
-            boot_changed = (
+            if (
                 self._committed_boot_id is not None
                 and self._committed_boot_id != current_boot_id
-            )
-            after_cursor = None if boot_changed else self._committed_cursor
+            ):
+                return self._create_continuity_emission(
+                    reason="boot_changed",
+                    current_boot_id=current_boot_id,
+                    candidate_cursor=None,
+                    boot_reset=True,
+                )
 
+            after_cursor = self._committed_cursor
             try:
                 batch = self._reader.read_service(
                     self._unit_name,
                     after_cursor=after_cursor,
                     max_entries=self._max_entries,
+                )
+            except SystemdJournalCursorUnavailableError:
+                self._read_failure_count += 1
+                if after_cursor is None:
+                    raise
+                return self._create_continuity_emission(
+                    reason="cursor_unavailable",
+                    current_boot_id=current_boot_id,
+                    candidate_cursor=None,
+                    boot_reset=False,
                 )
             except Exception:
                 self._read_failure_count += 1
@@ -277,8 +333,7 @@ class StatefulSystemdJournalCollector:
             candidate_cursor = batch.next_cursor
             if not batch.entries and batch.diagnostic is None:
                 self._empty_poll_count += 1
-                if boot_changed:
-                    self._boot_reset_count += 1
+                self._persist_checkpoint(current_boot_id, candidate_cursor)
                 self._committed_boot_id = current_boot_id
                 self._committed_cursor = candidate_cursor
                 return SystemdJournalEmission(self, None, None)
@@ -288,17 +343,12 @@ class StatefulSystemdJournalCollector:
                 collector_name=self._collector_name,
                 current_boot_id=current_boot_id,
             )
-            token = self._next_token
-            self._next_token += 1
-            self._pending = _PendingPublication(
-                token=token,
+            return self._set_pending(
                 event=event,
                 boot_id=current_boot_id,
                 cursor=candidate_cursor,
-                boot_reset=boot_changed,
+                boot_reset=False,
             )
-            self._emission_count += 1
-            return SystemdJournalEmission(self, event, token)
 
     def snapshot(self) -> SystemdJournalCollectorSnapshot:
         """Return a thread-safe state snapshot."""
@@ -310,6 +360,8 @@ class StatefulSystemdJournalCollector:
                 committed_boot_id=self._committed_boot_id,
                 committed_cursor=self._committed_cursor,
                 pending_publication=self._pending is not None,
+                checkpoint_enabled=self._checkpoint_store is not None,
+                checkpoint_restored=self._checkpoint_restored,
                 invocation_count=self._invocation_count,
                 reader_call_count=self._reader_call_count,
                 empty_poll_count=self._empty_poll_count,
@@ -319,7 +371,127 @@ class StatefulSystemdJournalCollector:
                 publication_rollback_count=self._publication_rollback_count,
                 boot_reset_count=self._boot_reset_count,
                 read_failure_count=self._read_failure_count,
+                checkpoint_load_count=self._checkpoint_load_count,
+                checkpoint_save_count=self._checkpoint_save_count,
+                checkpoint_failure_count=self._checkpoint_failure_count,
+                continuity_event_count=self._continuity_event_count,
+                cursor_recovery_count=self._cursor_recovery_count,
             )
+
+    def _restore_checkpoint(self) -> None:
+        store = self._checkpoint_store
+        if store is None:
+            return
+        try:
+            checkpoint: object = store.load(self._collector_name, self._unit_name)
+        except SystemdJournalCheckpointError as exc:
+            self._checkpoint_failure_count += 1
+            raise SystemdJournalCollectorError(
+                f"failed to load journald cursor checkpoint: {exc}"
+            ) from exc
+        except Exception as exc:
+            self._checkpoint_failure_count += 1
+            raise SystemdJournalCollectorContractError(
+                "journal checkpoint store raised an unexpected load error"
+            ) from exc
+        if checkpoint is None:
+            return
+        if not isinstance(checkpoint, SystemdJournalCheckpoint):
+            self._checkpoint_failure_count += 1
+            raise SystemdJournalCollectorContractError(
+                "journal checkpoint store must return a typed checkpoint or None"
+            )
+        self._committed_boot_id = checkpoint.boot_id
+        self._committed_cursor = checkpoint.cursor
+        self._checkpoint_restored = True
+        self._checkpoint_load_count += 1
+
+    def _persist_checkpoint(self, boot_id: str, cursor: str | None) -> None:
+        store = self._checkpoint_store
+        if store is None:
+            return
+        checkpoint = build_journal_checkpoint(
+            collector_name=self._collector_name,
+            unit_name=self._unit_name,
+            boot_id=boot_id,
+            cursor=cursor,
+        )
+        try:
+            store.save(checkpoint)
+        except SystemdJournalCheckpointError as exc:
+            self._checkpoint_failure_count += 1
+            raise SystemdJournalCollectorError(
+                f"failed to persist journald cursor checkpoint: {exc}"
+            ) from exc
+        except Exception as exc:
+            self._checkpoint_failure_count += 1
+            raise SystemdJournalCollectorContractError(
+                "journal checkpoint store raised an unexpected save error"
+            ) from exc
+        self._checkpoint_save_count += 1
+
+    def _create_continuity_emission(
+        self,
+        *,
+        reason: str,
+        current_boot_id: str,
+        candidate_cursor: str | None,
+        boot_reset: bool,
+    ) -> SystemdJournalEmission:
+        previous_cursor_sha256 = (
+            None
+            if self._committed_cursor is None
+            else hashlib.sha256(self._committed_cursor.encode("utf-8")).hexdigest()
+        )
+        event = SentinelEvent(
+            kind=EventKind.OBSERVATION,
+            source=SYSTEMD_JOURNAL_OBSERVATION_SOURCE,
+            message=(
+                "journald continuity recovery required for "
+                f"{self._unit_name}: {reason}."
+            ),
+            severity=EventSeverity.WARNING,
+            attributes={
+                "observation_type": SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE,
+                "collector_name": self._collector_name,
+                "requested_unit": self._unit_name,
+                "reason": reason,
+                "previous_boot_id": self._committed_boot_id,
+                "current_boot_id": current_boot_id,
+                "previous_cursor_sha256": previous_cursor_sha256,
+                "recovery_action": "reset_to_current_boot_tail_after_ack",
+                "continuity_lost": reason == "cursor_unavailable",
+            },
+        )
+        self._continuity_event_count += 1
+        if reason == "cursor_unavailable":
+            self._cursor_recovery_count += 1
+        return self._set_pending(
+            event=event,
+            boot_id=current_boot_id,
+            cursor=candidate_cursor,
+            boot_reset=boot_reset,
+        )
+
+    def _set_pending(
+        self,
+        *,
+        event: SentinelEvent,
+        boot_id: str,
+        cursor: str | None,
+        boot_reset: bool,
+    ) -> SystemdJournalEmission:
+        token = self._next_token
+        self._next_token += 1
+        self._pending = _PendingPublication(
+            token=token,
+            event=event,
+            boot_id=boot_id,
+            cursor=cursor,
+            boot_reset=boot_reset,
+        )
+        self._emission_count += 1
+        return SystemdJournalEmission(self, event, token)
 
     def _validate_batch(
         self,
@@ -370,6 +542,7 @@ class StatefulSystemdJournalCollector:
     def _commit_publication(self, token: int) -> None:
         with self._lock:
             pending = self._require_pending_token(token)
+            self._persist_checkpoint(pending.boot_id, pending.cursor)
             self._committed_boot_id = pending.boot_id
             self._committed_cursor = pending.cursor
             if pending.boot_reset:

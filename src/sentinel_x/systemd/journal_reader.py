@@ -76,6 +76,10 @@ class SystemdJournalCommandTimeoutError(SystemdJournalCommandError):
     """Raised when a journal read exceeds its bounded timeout."""
 
 
+class SystemdJournalCursorUnavailableError(SystemdJournalCommandError):
+    """Raised when journalctl cannot resume from a previously valid cursor."""
+
+
 class SystemdJournalProtocolError(SystemdJournalReadError):
     """Raised when journalctl JSON violates the expected bounded protocol."""
 
@@ -493,10 +497,15 @@ class JournalctlServiceReader:
         )
         if result.returncode != 0:
             detail = _bounded_text(stderr or stdout or "no diagnostic output")
-            raise SystemdJournalCommandError(
+            message = (
                 f"journalctl read failed for {requested_unit} "
                 f"with exit status {result.returncode}: {detail}"
             )
+            if after_cursor is not None and stderr.lstrip().startswith(
+                "Failed to seek to cursor:"
+            ):
+                raise SystemdJournalCursorUnavailableError(message)
+            raise SystemdJournalCommandError(message)
 
         entries = _parse_entries(stdout, entry_limit=entry_limit)
         diagnostic = _bounded_text(stderr) if stderr.strip() else None

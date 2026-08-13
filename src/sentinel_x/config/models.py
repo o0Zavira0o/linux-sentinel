@@ -482,12 +482,37 @@ class SystemdServiceTargetConfig:
 
 @dataclass(frozen=True, slots=True)
 class SystemdConfig:
-    """Bounded read-only systemd state and journald observation targets."""
+    """Bounded systemd observation and durable journal-state policy."""
 
     services: tuple[SystemdServiceTargetConfig, ...] = ()
+    journal_checkpoint_enabled: bool = True
+    journal_checkpoint_directory: str = "~/.local/state/sentinel-x/journal-checkpoints"
 
     def __post_init__(self) -> None:
-        """Validate bounded and unambiguous service target configuration."""
+        """Validate bounded targets and durable journal checkpoint policy."""
+
+        if type(self.journal_checkpoint_enabled) is not bool:
+            raise ConfigValidationError(
+                "systemd.journal_checkpoint_enabled must be a boolean"
+            )
+        if not isinstance(self.journal_checkpoint_directory, str):
+            raise ConfigValidationError(
+                "systemd.journal_checkpoint_directory must be a string"
+            )
+        checkpoint_directory = self.journal_checkpoint_directory.strip()
+        if not checkpoint_directory:
+            raise ConfigValidationError(
+                "systemd.journal_checkpoint_directory must not be empty"
+            )
+        if "\x00" in checkpoint_directory:
+            raise ConfigValidationError(
+                "systemd.journal_checkpoint_directory must not contain NUL characters"
+            )
+        object.__setattr__(
+            self,
+            "journal_checkpoint_directory",
+            checkpoint_directory,
+        )
 
         if not isinstance(self.services, tuple):
             raise ConfigValidationError("systemd.services must be a tuple")

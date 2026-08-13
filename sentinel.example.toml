@@ -55,6 +55,11 @@ budget_seconds = 1.0
 failure_backoff_initial_seconds = 1.0
 failure_backoff_max_seconds = 8.0
 
+
+[systemd]
+journal_checkpoint_enabled = true
+journal_checkpoint_directory = "~/.local/state/sentinel-x/journal-checkpoints"
+
 # Optional read-only systemd service observations.
 # Each configured target becomes an independently scheduled collector.
 # At most 16 service targets are accepted.

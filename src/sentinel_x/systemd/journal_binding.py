@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 
+from sentinel_x.systemd.journal_checkpoint import SystemdJournalCheckpointStore
 from sentinel_x.systemd.journal_observation import (
     StatefulSystemdJournalCollector,
     SystemBootIdReader,
@@ -27,6 +28,7 @@ class ConfiguredSystemdJournalCollectors:
         *,
         reader: SystemdJournalBatchReader | None = None,
         boot_id_reader: SystemBootIdReader = read_current_boot_id,
+        checkpoint_store: SystemdJournalCheckpointStore | None = None,
     ) -> None:
         normalized = tuple(bindings)
         if not normalized:
@@ -57,6 +59,7 @@ class ConfiguredSystemdJournalCollectors:
                     reader=shared_reader,
                     boot_id_reader=boot_id_reader,
                     max_entries=max_entries,
+                    checkpoint_store=checkpoint_store,
                 )
             except (TypeError, ValueError, SystemdJournalCollectorError) as exc:
                 raise SystemdJournalCollectorBindingError(str(exc)) from exc

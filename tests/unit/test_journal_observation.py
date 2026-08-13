@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sentinel_x.core import (
     CollectorDefinition,
@@ -16,12 +18,18 @@ from sentinel_x.core import (
     SentinelEvent,
 )
 from sentinel_x.systemd import (
+    SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE,
+    AtomicSystemdJournalCheckpointStore,
     JournalField,
     StatefulSystemdJournalCollector,
+    SystemdJournalCheckpoint,
+    SystemdJournalCheckpointStorageError,
     SystemdJournalBatch,
     SystemdJournalCollectorContractError,
+    SystemdJournalCollectorError,
     SystemdJournalCollectorStateError,
     SystemdJournalCommandError,
+    SystemdJournalCursorUnavailableError,
     SystemdJournalEntry,
     systemd_journal_batch_to_event,
 )
@@ -104,6 +112,48 @@ class _BootReader:
         return self.value
 
 
+class _MemoryCheckpointStore:
+    def __init__(
+        self,
+        checkpoint: SystemdJournalCheckpoint | None = None,
+    ) -> None:
+        self.checkpoint = checkpoint
+        self.loads: list[tuple[str, str]] = []
+        self.saves: list[SystemdJournalCheckpoint] = []
+        self.fail_load = False
+        self.fail_save = False
+
+    def load(
+        self,
+        collector_name: str,
+        unit_name: str,
+    ) -> SystemdJournalCheckpoint | None:
+        self.loads.append((collector_name, unit_name))
+        if self.fail_load:
+            raise SystemdJournalCheckpointStorageError("load failed")
+        return self.checkpoint
+
+    def save(self, checkpoint: SystemdJournalCheckpoint) -> None:
+        if self.fail_save:
+            raise SystemdJournalCheckpointStorageError("save failed")
+        self.saves.append(checkpoint)
+        self.checkpoint = checkpoint
+
+
+def _checkpoint(
+    *,
+    boot_id: str = _BOOT_A,
+    cursor: str | None = "cursor-restored",
+) -> SystemdJournalCheckpoint:
+    return SystemdJournalCheckpoint(
+        collector_name="journal.demo.1234",
+        unit_name="demo.service",
+        boot_id=boot_id,
+        cursor=cursor,
+        committed_at=_NOW,
+    )
+
+
 class _ManualClock:
     def __init__(self) -> None:
         self.now_ns = 0
@@ -139,6 +189,7 @@ class StatefulJournalCollectorTests(unittest.TestCase):
         self,
         reader: _QueuedReader,
         boot: _BootReader | None = None,
+        checkpoint_store: _MemoryCheckpointStore | None = None,
     ) -> StatefulSystemdJournalCollector:
         return StatefulSystemdJournalCollector(
             "journal.demo.1234",
@@ -146,6 +197,7 @@ class StatefulJournalCollectorTests(unittest.TestCase):
             reader=reader,
             boot_id_reader=_BootReader() if boot is None else boot,
             max_entries=8,
+            checkpoint_store=checkpoint_store,
         )
 
     def test_nonempty_batch_stays_uncommitted_until_acknowledged(self) -> None:
@@ -213,31 +265,37 @@ class StatefulJournalCollectorTests(unittest.TestCase):
         self.assertEqual(snapshot.read_failure_count, 1)
         self.assertEqual(reader.calls[-1][1], "cursor-1")
 
-    def test_boot_change_queries_without_old_cursor_and_commits_after_publish(
-        self,
-    ) -> None:
+    def test_boot_change_emits_continuity_then_reads_new_boot_tail(self) -> None:
         boot = _BootReader(_BOOT_A)
         reader = _QueuedReader(
             _batch(_entry("cursor-a", boot_id=_BOOT_A), limit=8),
             _batch(_entry("cursor-b", boot_id=_BOOT_B), limit=8),
         )
         collector = self._collector(reader, boot)
-        first = collector.collect()
-        first.commit_publication()
+        collector.collect().commit_publication()
         boot.value = _BOOT_B
 
-        second = collector.collect()
-        pending = collector.snapshot()
-        second.commit_publication()
-        committed = collector.snapshot()
+        continuity = collector.collect()
+        self.assertIsNotNone(continuity.event)
+        self.assertEqual(len(reader.calls), 1)
+        self.assertEqual(
+            continuity.event.attributes["reason"],
+            "boot_changed",
+        )
+        self.assertFalse(continuity.event.attributes["continuity_lost"])
+        continuity.commit_publication()
 
+        reset = collector.snapshot()
+        self.assertEqual(reset.committed_boot_id, _BOOT_B)
+        self.assertIsNone(reset.committed_cursor)
+        self.assertEqual(reset.boot_reset_count, 1)
+
+        evidence = collector.collect()
         self.assertIsNone(reader.calls[-1][1])
-        self.assertEqual(pending.committed_boot_id, _BOOT_A)
-        self.assertEqual(committed.committed_boot_id, _BOOT_B)
-        self.assertEqual(committed.committed_cursor, "cursor-b")
-        self.assertEqual(committed.boot_reset_count, 1)
+        evidence.commit_publication()
+        self.assertEqual(collector.snapshot().committed_cursor, "cursor-b")
 
-    def test_empty_boot_change_resets_old_cursor_after_successful_read(self) -> None:
+    def test_empty_boot_change_resets_then_reads_current_boot(self) -> None:
         boot = _BootReader(_BOOT_A)
         reader = _QueuedReader(
             _batch(_entry("cursor-a", boot_id=_BOOT_A), limit=8),
@@ -247,6 +305,9 @@ class StatefulJournalCollectorTests(unittest.TestCase):
         collector.collect().commit_publication()
         boot.value = _BOOT_B
 
+        continuity = collector.collect()
+        self.assertIsNotNone(continuity.event)
+        continuity.commit_publication()
         emission = collector.collect()
         snapshot = collector.snapshot()
 
@@ -463,6 +524,226 @@ class StatefulJournalCollectorTests(unittest.TestCase):
         self.assertEqual(delivered[-1], first_event_id)
         self.assertEqual(collector.snapshot().committed_cursor, "cursor-1")
         self.assertEqual(len(reader.calls), 1)
+
+    def test_atomic_checkpoint_survives_collector_reconstruction(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            store = AtomicSystemdJournalCheckpointStore(
+                directory=Path(temporary) / "checkpoints",
+                instance_name="test-agent",
+            )
+            first_reader = _QueuedReader(
+                _batch(_entry("cursor-1"), limit=8),
+            )
+            first = StatefulSystemdJournalCollector(
+                "journal.demo.1234",
+                "demo.service",
+                reader=first_reader,
+                boot_id_reader=_BootReader(),
+                max_entries=8,
+                checkpoint_store=store,
+            )
+            first.collect().commit_publication()
+
+            second_reader = _QueuedReader(
+                _batch(after_cursor="cursor-1", limit=8),
+            )
+            second = StatefulSystemdJournalCollector(
+                "journal.demo.1234",
+                "demo.service",
+                reader=second_reader,
+                boot_id_reader=_BootReader(),
+                max_entries=8,
+                checkpoint_store=store,
+            )
+            second.collect()
+
+            self.assertTrue(second.snapshot().checkpoint_restored)
+            self.assertEqual(second.snapshot().committed_cursor, "cursor-1")
+            self.assertEqual(second_reader.calls[0][1], "cursor-1")
+
+    def test_checkpoint_restore_resumes_from_durable_cursor(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint())
+        reader = _QueuedReader(
+            _batch(after_cursor="cursor-restored", limit=8),
+        )
+        collector = self._collector(reader, checkpoint_store=store)
+
+        emission = collector.collect()
+        snapshot = collector.snapshot()
+
+        self.assertIsNone(emission.event)
+        self.assertEqual(reader.calls[0][1], "cursor-restored")
+        self.assertTrue(snapshot.checkpoint_restored)
+        self.assertEqual(snapshot.checkpoint_load_count, 1)
+        self.assertEqual(snapshot.committed_cursor, "cursor-restored")
+
+    def test_successful_publication_persists_before_memory_commit(self) -> None:
+        store = _MemoryCheckpointStore()
+        collector = self._collector(
+            _QueuedReader(_batch(_entry("cursor-1"), limit=8)),
+            checkpoint_store=store,
+        )
+        emission = collector.collect()
+
+        self.assertEqual(store.saves, [])
+        self.assertIsNone(collector.snapshot().committed_cursor)
+        emission.commit_publication()
+
+        self.assertEqual(len(store.saves), 1)
+        self.assertEqual(store.saves[0].cursor, "cursor-1")
+        self.assertEqual(collector.snapshot().committed_cursor, "cursor-1")
+        self.assertEqual(collector.snapshot().checkpoint_save_count, 1)
+
+    def test_checkpoint_save_failure_keeps_pending_event_and_old_cursor(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint(cursor="cursor-old"))
+        store.fail_save = True
+        reader = _QueuedReader(
+            _batch(
+                _entry("cursor-new"),
+                after_cursor="cursor-old",
+                limit=8,
+            )
+        )
+        collector = self._collector(reader, checkpoint_store=store)
+        emission = collector.collect()
+        event_id = emission.event.event_id if emission.event is not None else None
+
+        with self.assertRaises(SystemdJournalCollectorError):
+            emission.commit_publication()
+
+        failed = collector.snapshot()
+        self.assertEqual(failed.committed_cursor, "cursor-old")
+        self.assertTrue(failed.pending_publication)
+        self.assertEqual(failed.checkpoint_failure_count, 1)
+
+        store.fail_save = False
+        retry = collector.collect()
+        retry_id = retry.event.event_id if retry.event is not None else None
+        self.assertEqual(retry_id, event_id)
+        self.assertEqual(len(reader.calls), 1)
+        retry.commit_publication()
+        self.assertEqual(collector.snapshot().committed_cursor, "cursor-new")
+
+    def test_empty_poll_checkpoint_failure_does_not_advance_memory(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint(cursor="cursor-old"))
+        store.fail_save = True
+        reader = _QueuedReader(
+            _batch(after_cursor="cursor-old", limit=8),
+        )
+        collector = self._collector(reader, checkpoint_store=store)
+
+        with self.assertRaises(SystemdJournalCollectorError):
+            collector.collect()
+
+        snapshot = collector.snapshot()
+        self.assertEqual(snapshot.committed_cursor, "cursor-old")
+        self.assertEqual(snapshot.checkpoint_failure_count, 1)
+
+    def test_restored_old_boot_requires_acknowledged_continuity_reset(self) -> None:
+        store = _MemoryCheckpointStore(
+            _checkpoint(boot_id=_BOOT_A, cursor="cursor-old")
+        )
+        boot = _BootReader(_BOOT_B)
+        reader = _QueuedReader(_batch(limit=8))
+        collector = self._collector(reader, boot, store)
+
+        continuity = collector.collect()
+        self.assertIsNotNone(continuity.event)
+        self.assertEqual(reader.calls, [])
+        self.assertEqual(
+            continuity.event.attributes["observation_type"],
+            SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE,
+        )
+        self.assertEqual(continuity.event.attributes["reason"], "boot_changed")
+        self.assertFalse(continuity.event.attributes["continuity_lost"])
+        continuity.commit_publication()
+
+        checkpoint = store.checkpoint
+        self.assertIsNotNone(checkpoint)
+        self.assertEqual(checkpoint.boot_id, _BOOT_B)
+        self.assertIsNone(checkpoint.cursor)
+        self.assertEqual(collector.snapshot().boot_reset_count, 1)
+
+        collector.collect()
+        self.assertIsNone(reader.calls[0][1])
+
+    def test_cursor_unavailable_emits_explicit_continuity_event(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint(cursor="cursor-old"))
+        reader = _QueuedReader(
+            SystemdJournalCursorUnavailableError("failed to seek"),
+            _batch(limit=8),
+        )
+        collector = self._collector(reader, checkpoint_store=store)
+
+        continuity = collector.collect()
+
+        self.assertIsNotNone(continuity.event)
+        self.assertEqual(continuity.event.attributes["reason"], "cursor_unavailable")
+        self.assertTrue(continuity.event.attributes["continuity_lost"])
+        self.assertNotIn("previous_cursor", continuity.event.attributes)
+        self.assertEqual(
+            len(continuity.event.attributes["previous_cursor_sha256"]),
+            64,
+        )
+        self.assertEqual(collector.snapshot().committed_cursor, "cursor-old")
+
+        continuity.commit_publication()
+        self.assertIsNone(collector.snapshot().committed_cursor)
+        collector.collect()
+        self.assertIsNone(reader.calls[-1][1])
+
+    def test_cursor_unavailable_rollback_retries_same_recovery_event(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint(cursor="cursor-old"))
+        reader = _QueuedReader(
+            SystemdJournalCursorUnavailableError("failed to seek"),
+        )
+        collector = self._collector(reader, checkpoint_store=store)
+        first = collector.collect()
+        first_id = first.event.event_id if first.event is not None else None
+
+        first.rollback_publication()
+        retry = collector.collect()
+        retry_id = retry.event.event_id if retry.event is not None else None
+
+        self.assertEqual(retry_id, first_id)
+        self.assertEqual(len(reader.calls), 1)
+        self.assertEqual(collector.snapshot().committed_cursor, "cursor-old")
+
+    def test_generic_reader_failure_never_triggers_cursor_recovery(self) -> None:
+        store = _MemoryCheckpointStore(_checkpoint(cursor="cursor-old"))
+        collector = self._collector(
+            _QueuedReader(SystemdJournalCommandError("permission denied")),
+            checkpoint_store=store,
+        )
+
+        with self.assertRaises(SystemdJournalCommandError):
+            collector.collect()
+
+        snapshot = collector.snapshot()
+        self.assertEqual(snapshot.committed_cursor, "cursor-old")
+        self.assertEqual(snapshot.continuity_event_count, 0)
+        self.assertEqual(snapshot.cursor_recovery_count, 0)
+
+    def test_checkpoint_store_contract_is_validated(self) -> None:
+        with self.assertRaises(TypeError):
+            StatefulSystemdJournalCollector(
+                "journal.demo.1234",
+                "demo.service",
+                reader=_QueuedReader(),
+                boot_id_reader=_BootReader(),
+                max_entries=8,
+                checkpoint_store=object(),
+            )
+
+    def test_checkpoint_load_failure_is_wrapped_at_construction(self) -> None:
+        store = _MemoryCheckpointStore()
+        store.fail_load = True
+
+        with self.assertRaisesRegex(
+            SystemdJournalCollectorError,
+            "failed to load journald cursor checkpoint",
+        ):
+            self._collector(_QueuedReader(), checkpoint_store=store)
 
     def test_snapshot_is_serialization_friendly(self) -> None:
         collector = self._collector(_QueuedReader(_batch(limit=8)))

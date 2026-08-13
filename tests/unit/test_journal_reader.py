@@ -13,6 +13,7 @@ from sentinel_x.systemd.journal_reader import (
     JournalctlServiceReader,
     SystemdJournalCommandError,
     SystemdJournalCommandTimeoutError,
+    SystemdJournalCursorUnavailableError,
     SystemdJournalExecutableNotFoundError,
     SystemdJournalProtocolError,
 )
@@ -355,6 +356,54 @@ class JournalctlServiceReaderTests(unittest.TestCase):
             self._reader(runner).read_service("demo.service")
 
         self.assertLessEqual(len(str(context.exception)), 600)
+
+    def test_incremental_seek_failure_is_classified_as_cursor_unavailable(self) -> None:
+        runner = RecordingRunner(
+            JournalctlCommandResult(
+                1,
+                b"",
+                b"Failed to seek to cursor: Invalid argument\n",
+            )
+        )
+
+        with self.assertRaises(SystemdJournalCursorUnavailableError):
+            self._reader(runner).read_service(
+                "demo.service",
+                after_cursor=_CURSOR_A,
+            )
+
+    def test_seek_failure_without_incremental_cursor_stays_generic(self) -> None:
+        runner = RecordingRunner(
+            JournalctlCommandResult(
+                1,
+                b"",
+                b"Failed to seek to cursor: Invalid argument\n",
+            )
+        )
+
+        with self.assertRaises(SystemdJournalCommandError) as context:
+            self._reader(runner).read_service("demo.service")
+
+        self.assertNotIsInstance(
+            context.exception,
+            SystemdJournalCursorUnavailableError,
+        )
+
+    def test_other_incremental_failure_stays_generic(self) -> None:
+        runner = RecordingRunner(
+            JournalctlCommandResult(1, b"", b"Permission denied\n")
+        )
+
+        with self.assertRaises(SystemdJournalCommandError) as context:
+            self._reader(runner).read_service(
+                "demo.service",
+                after_cursor=_CURSOR_A,
+            )
+
+        self.assertNotIsInstance(
+            context.exception,
+            SystemdJournalCursorUnavailableError,
+        )
 
     def test_invalid_utf8_nul_and_oversized_stderr_are_rejected(self) -> None:
         cases = (

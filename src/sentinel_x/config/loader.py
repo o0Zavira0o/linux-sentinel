@@ -304,7 +304,11 @@ def _parse_systemd(raw_systemd: Mapping[str, Any]) -> SystemdConfig:
 
     _reject_unknown_keys(
         mapping=raw_systemd,
-        allowed={"services"},
+        allowed={
+            "services",
+            "journal_checkpoint_enabled",
+            "journal_checkpoint_directory",
+        },
         context="systemd",
     )
     raw_services = raw_systemd.get("services", [])
@@ -316,7 +320,17 @@ def _parse_systemd(raw_systemd: Mapping[str, Any]) -> SystemdConfig:
         services.append(_parse_systemd_service_target(raw_service, index=index))
 
     try:
-        return SystemdConfig(services=tuple(services))
+        return SystemdConfig(
+            services=tuple(services),
+            journal_checkpoint_enabled=raw_systemd.get(
+                "journal_checkpoint_enabled",
+                True,
+            ),
+            journal_checkpoint_directory=raw_systemd.get(
+                "journal_checkpoint_directory",
+                "~/.local/state/sentinel-x/journal-checkpoints",
+            ),
+        )
     except ConfigValidationError as exc:
         raise ConfigSchemaError(str(exc)) from exc
 

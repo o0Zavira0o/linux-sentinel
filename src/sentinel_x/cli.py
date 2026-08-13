@@ -68,6 +68,7 @@ from sentinel_x.observability import (
     validate_sample_interval,
 )
 from sentinel_x.systemd import (
+    AtomicSystemdJournalCheckpointStore,
     ConfiguredSystemdJournalCollectors,
     ConfiguredSystemdServiceCollectors,
     SystemdJournalCollectorError,
@@ -270,6 +271,15 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Flush on write: {config.storage.flush_on_write}")
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    print(
+        "Systemd journal checkpointing: "
+        f"{'enabled' if config.systemd.journal_checkpoint_enabled else 'disabled'}"
+    )
+    if config.systemd.journal_checkpoint_enabled:
+        print(
+            "Journal checkpoint directory: "
+            f"{loaded.resolve_path(config.systemd.journal_checkpoint_directory)}"
+        )
 
     return 0
 
@@ -919,8 +929,20 @@ def _run_engine(args: Namespace) -> int:
         systemd_collectors = ConfiguredSystemdServiceCollectors(
             config.systemd.bindings()
         )
+        journal_checkpoint_store: AtomicSystemdJournalCheckpointStore | None = None
+        if (
+            config.systemd.journal_target_count > 0
+            and config.systemd.journal_checkpoint_enabled
+        ):
+            journal_checkpoint_store = AtomicSystemdJournalCheckpointStore(
+                directory=loaded.resolve_path(
+                    config.systemd.journal_checkpoint_directory
+                ),
+                instance_name=config.agent.instance_name,
+            )
         journal_collectors = ConfiguredSystemdJournalCollectors(
-            config.systemd.journal_bindings()
+            config.systemd.journal_bindings(),
+            checkpoint_store=journal_checkpoint_store,
         )
         collector_settings: list[tuple[str, CollectorRuntimeSettings]] = []
         collector_settings.extend(config.collectors.items())
@@ -953,6 +975,15 @@ def _run_engine(args: Namespace) -> int:
     )
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    print(
+        "Systemd journal checkpointing: "
+        f"{'enabled' if config.systemd.journal_checkpoint_enabled else 'disabled'}"
+    )
+    if config.systemd.journal_checkpoint_enabled:
+        print(
+            "Journal checkpoint directory: "
+            f"{loaded.resolve_path(config.systemd.journal_checkpoint_directory)}"
+        )
 
     event_bus = EventBus()
     event_bus.subscribe(_print_event)

@@ -341,6 +341,13 @@ def _parse_systemd_service_target(
             "budget_seconds",
             "failure_backoff_initial_seconds",
             "failure_backoff_max_seconds",
+            "journal_enabled",
+            "journal_interval_seconds",
+            "journal_initial_delay_seconds",
+            "journal_budget_seconds",
+            "journal_failure_backoff_initial_seconds",
+            "journal_failure_backoff_max_seconds",
+            "journal_max_entries",
         },
         context=context,
     )
@@ -363,6 +370,28 @@ def _parse_systemd_service_target(
                 "failure_backoff_max_seconds",
                 16.0,
             ),
+            journal_enabled=raw_service.get("journal_enabled", False),
+            journal_interval_seconds=raw_service.get(
+                "journal_interval_seconds",
+                5.0,
+            ),
+            journal_initial_delay_seconds=raw_service.get(
+                "journal_initial_delay_seconds",
+                1.25,
+            ),
+            journal_budget_seconds=raw_service.get(
+                "journal_budget_seconds",
+                1.0,
+            ),
+            journal_failure_backoff_initial_seconds=raw_service.get(
+                "journal_failure_backoff_initial_seconds",
+                2.0,
+            ),
+            journal_failure_backoff_max_seconds=raw_service.get(
+                "journal_failure_backoff_max_seconds",
+                16.0,
+            ),
+            journal_max_entries=raw_service.get("journal_max_entries", 32),
         )
     except ConfigValidationError as exc:
         raise ConfigSchemaError(f"{context}: {exc}") from exc

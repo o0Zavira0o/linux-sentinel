@@ -502,6 +502,180 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertNotIn("@", collector_name)
         self.assertTrue(collector_name.startswith("systemd."))
 
+    def test_default_systemd_journal_targets_are_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-default-journal.toml"
+            config_path.write_text(
+                '[[systemd.services]]\nunit_name = "sshd.service"\n',
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertFalse(target.journal_enabled)
+        self.assertEqual(target.journal_max_entries, 32)
+        self.assertEqual(loaded.config.systemd.journal_target_count, 0)
+        self.assertEqual(loaded.config.systemd.journal_items(), ())
+        self.assertEqual(loaded.config.systemd.journal_bindings(), ())
+
+    def test_explicit_systemd_journal_policy_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "systemd-journald.service"\n'
+                    "journal_enabled = true\n"
+                    "journal_interval_seconds = 7.0\n"
+                    "journal_initial_delay_seconds = 1.75\n"
+                    "journal_budget_seconds = 1.5\n"
+                    "journal_failure_backoff_initial_seconds = 3.0\n"
+                    "journal_failure_backoff_max_seconds = 12.0\n"
+                    "journal_max_entries = 24\n"
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertTrue(target.journal_enabled)
+        self.assertEqual(target.journal_interval_seconds, 7.0)
+        self.assertEqual(target.journal_initial_delay_seconds, 1.75)
+        self.assertEqual(target.journal_budget_seconds, 1.5)
+        self.assertEqual(target.journal_failure_backoff_initial_seconds, 3.0)
+        self.assertEqual(target.journal_failure_backoff_max_seconds, 12.0)
+        self.assertEqual(target.journal_max_entries, 24)
+        self.assertEqual(loaded.config.systemd.journal_target_count, 1)
+
+    def test_journal_and_state_enable_flags_are_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-only.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "enabled = false\n"
+                    "journal_enabled = true\n"
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertFalse(target.enabled)
+        self.assertTrue(target.journal_enabled)
+        self.assertFalse(loaded.config.systemd.items()[0][1].enabled)
+        self.assertTrue(loaded.config.systemd.journal_items()[0][1].enabled)
+
+    def test_journal_binding_uses_deterministic_safe_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-template.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "getty@tty1.service"\n'
+                    "journal_enabled = true\n"
+                    "journal_max_entries = 8\n"
+                ),
+                encoding="utf-8",
+            )
+            loaded = load_config(config_path)
+
+        target = loaded.config.systemd.services[0]
+        self.assertLessEqual(len(target.journal_collector_name), 64)
+        self.assertNotIn("@", target.journal_collector_name)
+        self.assertTrue(target.journal_collector_name.startswith("journal."))
+        self.assertEqual(
+            loaded.config.systemd.journal_bindings(),
+            ((target.journal_collector_name, "getty@tty1.service", 8),),
+        )
+
+    def test_too_fast_systemd_journal_interval_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-fast.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "journal_enabled = true\n"
+                    "journal_interval_seconds = 0.5\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_invalid_systemd_journal_enabled_type_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-enabled.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    'journal_enabled = "yes"\n'
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_zero_systemd_journal_max_entries_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-zero.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "journal_max_entries = 0\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_systemd_journal_max_entries_above_bound_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-large.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "journal_max_entries = 65\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_systemd_journal_max_entries_boolean_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-bool.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "journal_max_entries = true\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
+    def test_invalid_systemd_journal_backoff_pair_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "systemd-journal-backoff.toml"
+            config_path.write_text(
+                (
+                    "[[systemd.services]]\n"
+                    'unit_name = "sshd.service"\n'
+                    "journal_failure_backoff_initial_seconds = 8.0\n"
+                    "journal_failure_backoff_max_seconds = 4.0\n"
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ConfigSchemaError):
+                load_config(config_path)
+
 
 if __name__ == "__main__":
     unittest.main()

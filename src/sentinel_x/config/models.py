@@ -21,8 +21,11 @@ _INSTANCE_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 _MIN_COLLECTOR_INTERVAL_SECONDS = 0.05
 _MAX_RUNTIME_SECONDS = 86_400.0
 _MIN_SYSTEMD_SERVICE_INTERVAL_SECONDS = 1.0
+_MIN_SYSTEMD_JOURNAL_INTERVAL_SECONDS = 1.0
 MAX_SYSTEMD_SERVICE_TARGETS = 16
+MAX_SYSTEMD_JOURNAL_ENTRIES = 64
 _SYSTEMD_COLLECTOR_PREFIX = "systemd."
+_SYSTEMD_JOURNAL_COLLECTOR_PREFIX = "journal."
 _SYSTEMD_COLLECTOR_HASH_HEX_LENGTH = 12
 
 BUILTIN_HOST_COLLECTOR_NAMES = (
@@ -306,24 +309,34 @@ class CollectorsConfig:
         raise KeyError(collector_name)
 
 
-def _systemd_service_collector_name(unit_name: str) -> str:
-    """Return a stable scheduler-safe identity for one systemd service target."""
+def _systemd_collector_name(unit_name: str, *, prefix: str) -> str:
+    """Return a stable scheduler-safe identity for one systemd target."""
 
     stem = unit_name.removesuffix(".service")
     safe_stem = re.sub(r"[^A-Za-z0-9_.-]", "_", stem)
     digest = hashlib.sha256(unit_name.encode("utf-8")).hexdigest()[
         :_SYSTEMD_COLLECTOR_HASH_HEX_LENGTH
     ]
-    max_stem_length = (
-        64 - len(_SYSTEMD_COLLECTOR_PREFIX) - 1 - _SYSTEMD_COLLECTOR_HASH_HEX_LENGTH
-    )
+    max_stem_length = 64 - len(prefix) - 1 - _SYSTEMD_COLLECTOR_HASH_HEX_LENGTH
     safe_stem = safe_stem[:max_stem_length]
-    return f"{_SYSTEMD_COLLECTOR_PREFIX}{safe_stem}.{digest}"
+    return f"{prefix}{safe_stem}.{digest}"
+
+
+def _systemd_service_collector_name(unit_name: str) -> str:
+    """Return the scheduler identity for one systemd state collector."""
+
+    return _systemd_collector_name(unit_name, prefix=_SYSTEMD_COLLECTOR_PREFIX)
+
+
+def _systemd_journal_collector_name(unit_name: str) -> str:
+    """Return the scheduler identity for one journald evidence collector."""
+
+    return _systemd_collector_name(unit_name, prefix=_SYSTEMD_JOURNAL_COLLECTOR_PREFIX)
 
 
 @dataclass(frozen=True, slots=True)
 class SystemdServiceTargetConfig:
-    """Read-only observation policy for one explicitly configured service."""
+    """Read-only state and journald observation policy for one service."""
 
     unit_name: str
     enabled: bool = True
@@ -332,9 +345,16 @@ class SystemdServiceTargetConfig:
     budget_seconds: float | None = 0.75
     failure_backoff_initial_seconds: float = 2.0
     failure_backoff_max_seconds: float = 16.0
+    journal_enabled: bool = False
+    journal_interval_seconds: float = 5.0
+    journal_initial_delay_seconds: float = 1.25
+    journal_budget_seconds: float | None = 1.0
+    journal_failure_backoff_initial_seconds: float = 2.0
+    journal_failure_backoff_max_seconds: float = 16.0
+    journal_max_entries: int = 32
 
     def __post_init__(self) -> None:
-        """Validate service identity and bounded runtime policy."""
+        """Validate service identity and independent bounded runtime policies."""
 
         try:
             unit_name = validate_service_unit_name(
@@ -344,7 +364,7 @@ class SystemdServiceTargetConfig:
         except SystemdUnitNameError as exc:
             raise ConfigValidationError(str(exc)) from exc
 
-        runtime = CollectorRuntimeConfig(
+        state_runtime = CollectorRuntimeConfig(
             enabled=self.enabled,
             interval_seconds=self.interval_seconds,
             initial_delay_seconds=self.initial_delay_seconds,
@@ -352,42 +372,117 @@ class SystemdServiceTargetConfig:
             failure_backoff_initial_seconds=self.failure_backoff_initial_seconds,
             failure_backoff_max_seconds=self.failure_backoff_max_seconds,
         )
-        if runtime.interval_seconds < _MIN_SYSTEMD_SERVICE_INTERVAL_SECONDS:
+        if state_runtime.interval_seconds < _MIN_SYSTEMD_SERVICE_INTERVAL_SECONDS:
             raise ConfigValidationError(
                 "systemd service interval_seconds must be at least "
                 f"{_MIN_SYSTEMD_SERVICE_INTERVAL_SECONDS} seconds"
             )
 
+        journal_runtime = CollectorRuntimeConfig(
+            enabled=self.journal_enabled,
+            interval_seconds=self.journal_interval_seconds,
+            initial_delay_seconds=self.journal_initial_delay_seconds,
+            budget_seconds=self.journal_budget_seconds,
+            failure_backoff_initial_seconds=(
+                self.journal_failure_backoff_initial_seconds
+            ),
+            failure_backoff_max_seconds=self.journal_failure_backoff_max_seconds,
+        )
+        if journal_runtime.interval_seconds < _MIN_SYSTEMD_JOURNAL_INTERVAL_SECONDS:
+            raise ConfigValidationError(
+                "systemd journal_interval_seconds must be at least "
+                f"{_MIN_SYSTEMD_JOURNAL_INTERVAL_SECONDS} seconds"
+            )
+
+        if isinstance(self.journal_max_entries, bool) or not isinstance(
+            self.journal_max_entries, int
+        ):
+            raise ConfigValidationError(
+                "systemd journal_max_entries must be an integer"
+            )
+        if not 1 <= self.journal_max_entries <= MAX_SYSTEMD_JOURNAL_ENTRIES:
+            raise ConfigValidationError(
+                "systemd journal_max_entries must be between 1 and "
+                f"{MAX_SYSTEMD_JOURNAL_ENTRIES}"
+            )
+
         object.__setattr__(self, "unit_name", unit_name)
-        object.__setattr__(self, "enabled", runtime.enabled)
-        object.__setattr__(self, "interval_seconds", runtime.interval_seconds)
+        object.__setattr__(self, "enabled", state_runtime.enabled)
+        object.__setattr__(self, "interval_seconds", state_runtime.interval_seconds)
         object.__setattr__(
             self,
             "initial_delay_seconds",
-            runtime.initial_delay_seconds,
+            state_runtime.initial_delay_seconds,
         )
-        object.__setattr__(self, "budget_seconds", runtime.budget_seconds)
+        object.__setattr__(self, "budget_seconds", state_runtime.budget_seconds)
         object.__setattr__(
             self,
             "failure_backoff_initial_seconds",
-            runtime.failure_backoff_initial_seconds,
+            state_runtime.failure_backoff_initial_seconds,
         )
         object.__setattr__(
             self,
             "failure_backoff_max_seconds",
-            runtime.failure_backoff_max_seconds,
+            state_runtime.failure_backoff_max_seconds,
+        )
+        object.__setattr__(self, "journal_enabled", journal_runtime.enabled)
+        object.__setattr__(
+            self,
+            "journal_interval_seconds",
+            journal_runtime.interval_seconds,
+        )
+        object.__setattr__(
+            self,
+            "journal_initial_delay_seconds",
+            journal_runtime.initial_delay_seconds,
+        )
+        object.__setattr__(
+            self,
+            "journal_budget_seconds",
+            journal_runtime.budget_seconds,
+        )
+        object.__setattr__(
+            self,
+            "journal_failure_backoff_initial_seconds",
+            journal_runtime.failure_backoff_initial_seconds,
+        )
+        object.__setattr__(
+            self,
+            "journal_failure_backoff_max_seconds",
+            journal_runtime.failure_backoff_max_seconds,
         )
 
     @property
     def collector_name(self) -> str:
-        """Return the deterministic scheduler identity for this target."""
+        """Return the deterministic scheduler identity for state observation."""
 
         return _systemd_service_collector_name(self.unit_name)
+
+    @property
+    def journal_collector_name(self) -> str:
+        """Return the deterministic scheduler identity for journald evidence."""
+
+        return _systemd_journal_collector_name(self.unit_name)
+
+    @property
+    def journal_runtime_config(self) -> CollectorRuntimeConfig:
+        """Return the independent scheduling policy for journald evidence."""
+
+        return CollectorRuntimeConfig(
+            enabled=self.journal_enabled,
+            interval_seconds=self.journal_interval_seconds,
+            initial_delay_seconds=self.journal_initial_delay_seconds,
+            budget_seconds=self.journal_budget_seconds,
+            failure_backoff_initial_seconds=(
+                self.journal_failure_backoff_initial_seconds
+            ),
+            failure_backoff_max_seconds=self.journal_failure_backoff_max_seconds,
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class SystemdConfig:
-    """Bounded read-only systemd observation targets."""
+    """Bounded read-only systemd state and journald observation targets."""
 
     services: tuple[SystemdServiceTargetConfig, ...] = ()
 
@@ -403,34 +498,68 @@ class SystemdConfig:
             )
 
         unit_names: list[str] = []
-        collector_names: list[str] = []
+        state_collector_names: list[str] = []
+        journal_collector_names: list[str] = []
         for service in self.services:
             if not isinstance(service, SystemdServiceTargetConfig):
                 raise ConfigValidationError(
                     "systemd.services entries must be SystemdServiceTargetConfig"
                 )
             unit_names.append(service.unit_name)
-            collector_names.append(service.collector_name)
+            state_collector_names.append(service.collector_name)
+            journal_collector_names.append(service.journal_collector_name)
 
         if len(set(unit_names)) != len(unit_names):
             raise ConfigValidationError(
                 "systemd.services must not contain duplicate unit_name values"
             )
-        if len(set(collector_names)) != len(collector_names):
+        if len(set(state_collector_names)) != len(state_collector_names):
             raise ConfigValidationError(
                 "systemd service collector identities must be unique"
             )
+        if len(set(journal_collector_names)) != len(journal_collector_names):
+            raise ConfigValidationError(
+                "systemd journal collector identities must be unique"
+            )
+
+    @property
+    def journal_target_count(self) -> int:
+        """Return the number of explicitly enabled journald targets."""
+
+        return sum(service.journal_enabled for service in self.services)
 
     def items(self) -> tuple[tuple[str, SystemdServiceTargetConfig], ...]:
-        """Return scheduler settings in declared target order."""
+        """Return state-collector scheduler settings in declared order."""
 
         return tuple((service.collector_name, service) for service in self.services)
 
     def bindings(self) -> tuple[tuple[str, str], ...]:
-        """Return collector-name to requested-unit bindings."""
+        """Return state collector-name to requested-unit bindings."""
 
         return tuple(
             (service.collector_name, service.unit_name) for service in self.services
+        )
+
+    def journal_items(self) -> tuple[tuple[str, CollectorRuntimeConfig], ...]:
+        """Return enabled journald scheduler settings in declared order."""
+
+        return tuple(
+            (service.journal_collector_name, service.journal_runtime_config)
+            for service in self.services
+            if service.journal_enabled
+        )
+
+    def journal_bindings(self) -> tuple[tuple[str, str, int], ...]:
+        """Return enabled journald collector bindings in declared order."""
+
+        return tuple(
+            (
+                service.journal_collector_name,
+                service.unit_name,
+                service.journal_max_entries,
+            )
+            for service in self.services
+            if service.journal_enabled
         )
 
 

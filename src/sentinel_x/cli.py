@@ -68,7 +68,9 @@ from sentinel_x.observability import (
     validate_sample_interval,
 )
 from sentinel_x.systemd import (
+    ConfiguredSystemdJournalCollectors,
     ConfiguredSystemdServiceCollectors,
+    SystemdJournalCollectorError,
     SystemdServiceCollectorError,
 )
 from sentinel_x.storage import EventRecorderError, JsonlEventRecorder
@@ -267,6 +269,7 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Storage directory: {loaded.resolve_path(config.storage.directory)}")
     print(f"Flush on write: {config.storage.flush_on_write}")
     print(f"Systemd service targets: {len(config.systemd.services)}")
+    print(f"Systemd journal targets: {config.systemd.journal_target_count}")
 
     return 0
 
@@ -916,11 +919,16 @@ def _run_engine(args: Namespace) -> int:
         systemd_collectors = ConfiguredSystemdServiceCollectors(
             config.systemd.bindings()
         )
+        journal_collectors = ConfiguredSystemdJournalCollectors(
+            config.systemd.journal_bindings()
+        )
         collector_settings: list[tuple[str, CollectorRuntimeSettings]] = []
         collector_settings.extend(config.collectors.items())
         collector_settings.extend(config.systemd.items())
+        collector_settings.extend(config.systemd.journal_items())
         collector_handlers = dict(builtin_collectors.handlers())
         collector_handlers.update(systemd_collectors.handlers())
+        collector_handlers.update(journal_collectors.handlers())
         collector_registry = CollectorRegistry.from_settings(
             collector_settings,
             collector_handlers,
@@ -929,6 +937,7 @@ def _run_engine(args: Namespace) -> int:
         CollectorDefinitionValidationError,
         CollectorRegistryError,
         RuntimeCollectorError,
+        SystemdJournalCollectorError,
         SystemdServiceCollectorError,
     ) as exc:
         print(
@@ -943,6 +952,7 @@ def _run_engine(args: Namespace) -> int:
         f"{collector_registry.disabled_count} disabled"
     )
     print(f"Systemd service targets: {len(config.systemd.services)}")
+    print(f"Systemd journal targets: {config.systemd.journal_target_count}")
 
     event_bus = EventBus()
     event_bus.subscribe(_print_event)

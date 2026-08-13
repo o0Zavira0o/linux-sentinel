@@ -14,6 +14,7 @@ from sentinel_x.config.loader import (
 )
 from sentinel_x.config.models import (
     BUILTIN_HOST_COLLECTOR_NAMES,
+    MAX_SYSTEMD_JOURNAL_ENTRIES,
     MAX_SYSTEMD_SERVICE_TARGETS,
     AgentConfig,
     CollectorRuntimeConfig,
@@ -28,6 +29,7 @@ from sentinel_x.config.models import (
 __all__ = [
     "AgentConfig",
     "BUILTIN_HOST_COLLECTOR_NAMES",
+    "MAX_SYSTEMD_JOURNAL_ENTRIES",
     "MAX_SYSTEMD_SERVICE_TARGETS",
     "CollectorRuntimeConfig",
     "CollectorsConfig",

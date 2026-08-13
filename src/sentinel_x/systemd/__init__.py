@@ -1,5 +1,9 @@
 """Read-only systemd integration primitives for Sentinel-X."""
 
+from sentinel_x.systemd.journal_binding import (
+    ConfiguredSystemdJournalCollectors,
+    SystemdJournalCollectorBindingError,
+)
 from sentinel_x.systemd.journal_models import (
     JournalAtom,
     JournalField,
@@ -66,11 +70,13 @@ from sentinel_x.systemd.reader import (
 )
 
 __all__ = [
+    "ConfiguredSystemdJournalCollectors",
     "SYSTEMD_JOURNAL_OBSERVATION_SOURCE",
     "SYSTEMD_JOURNAL_OBSERVATION_TYPE",
     "StatefulSystemdJournalCollector",
     "SystemBootIdReader",
     "SystemdJournalBatchReader",
+    "SystemdJournalCollectorBindingError",
     "SystemdJournalCollectorContractError",
     "SystemdJournalCollectorError",
     "SystemdJournalCollectorSnapshot",

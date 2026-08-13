@@ -42,6 +42,15 @@ from sentinel_x.core.registry import (
     DuplicateCollectorDefinitionError,
     UnknownCollectorDefinitionError,
 )
+from sentinel_x.core.runtime import (
+    CollectorEmissionResult,
+    CollectorRuntime,
+    CollectorRuntimeClockError,
+    CollectorRuntimeContractError,
+    CollectorRuntimeCycle,
+    CollectorRuntimeError,
+    CollectorRuntimeSnapshot,
+)
 from sentinel_x.core.scheduling import (
     CollectorDispatch,
     CollectorExecutionState,
@@ -80,6 +89,13 @@ __all__ = [
     "CollectorRegistry",
     "CollectorRegistryBindingError",
     "CollectorRegistryError",
+    "CollectorEmissionResult",
+    "CollectorRuntime",
+    "CollectorRuntimeClockError",
+    "CollectorRuntimeContractError",
+    "CollectorRuntimeCycle",
+    "CollectorRuntimeError",
+    "CollectorRuntimeSnapshot",
     "CollectorRuntimeSettings",
     "CollectorSchedule",
     "CollectorScheduler",

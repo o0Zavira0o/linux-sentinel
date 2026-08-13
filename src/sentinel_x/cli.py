@@ -20,7 +20,14 @@ from sentinel_x.config import (
     SentinelConfig,
     load_config,
 )
-from sentinel_x.core import EventBus, SentinelEngine, SentinelEvent
+from sentinel_x.core import (
+    CollectorDefinitionValidationError,
+    CollectorRegistry,
+    CollectorRegistryError,
+    EventBus,
+    SentinelEngine,
+    SentinelEvent,
+)
 from sentinel_x.observability import (
     BlockDeviceKind,
     CpuSamplingError,
@@ -43,6 +50,8 @@ from sentinel_x.observability import (
     ProcessObservation,
     ProcessObservationError,
     ProcessSampleStatus,
+    RuntimeCollectorError,
+    build_builtin_host_collectors,
     build_disk_io_observation,
     build_filesystem_observation,
     build_host_observation,
@@ -125,7 +134,10 @@ def _build_parser() -> ArgumentParser:
         "--tick-interval",
         type=float,
         default=None,
-        help="Override agent.tick_interval for this run only.",
+        help=(
+            "Override the maximum runtime wake ceiling from "
+            "agent.tick_interval for this run only."
+        ),
     )
 
     observe_host_parser = subparsers.add_parser(
@@ -245,7 +257,7 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Source: {loaded.source_label}")
     print("Status: VALID")
     print(f"Agent instance: {config.agent.instance_name}")
-    print(f"Tick interval: {config.agent.tick_interval:.3f} seconds")
+    print(f"Runtime wake ceiling: {config.agent.tick_interval:.3f} seconds")
     print(f"Event storage: {'enabled' if config.storage.enabled else 'disabled'}")
     print(f"Storage directory: {loaded.resolve_path(config.storage.directory)}")
     print(f"Flush on write: {config.storage.flush_on_write}")
@@ -893,6 +905,29 @@ def _run_engine(args: Namespace) -> int:
     print(f"Configuration: {loaded.source_label}")
     print(f"Agent instance: {config.agent.instance_name}")
 
+    try:
+        builtin_collectors = build_builtin_host_collectors()
+        collector_registry = CollectorRegistry.from_settings(
+            config.collectors.items(),
+            builtin_collectors.handlers(),
+        )
+    except (
+        CollectorDefinitionValidationError,
+        CollectorRegistryError,
+        RuntimeCollectorError,
+    ) as exc:
+        print(
+            f"runtime setup error: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        "Collectors: "
+        f"{collector_registry.enabled_count} enabled, "
+        f"{collector_registry.disabled_count} disabled"
+    )
+
     event_bus = EventBus()
     event_bus.subscribe(_print_event)
 
@@ -927,6 +962,7 @@ def _run_engine(args: Namespace) -> int:
     engine = SentinelEngine(
         event_bus=event_bus,
         instance_name=config.agent.instance_name,
+        collector_registry=collector_registry,
     )
 
     def handle_shutdown_signal(

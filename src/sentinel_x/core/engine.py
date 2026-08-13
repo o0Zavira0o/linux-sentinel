@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import math
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from threading import Event, Lock, RLock
 from typing import Final
@@ -12,6 +15,8 @@ from sentinel_x.core.events import (
     EventSeverity,
     SentinelEvent,
 )
+from sentinel_x.core.registry import CollectorRegistry
+from sentinel_x.core.runtime import CollectorRuntime, CollectorRuntimeSnapshot
 from sentinel_x.core.state import (
     AgentLifecycle,
     AgentState,
@@ -34,17 +39,14 @@ class EngineSnapshot:
     state: AgentState
     stop_requested: bool
     stop_reason: str | None
+    collector_runtime: CollectorRuntimeSnapshot | None
 
 
 class SentinelEngine:
-    """Lifecycle coordinator for Sentinel-X.
+    """Lifecycle coordinator for the scheduled Sentinel-X runtime.
 
-    Phase 0 deliberately keeps the runtime loop operationally
-    empty.
-
-    Later phases will attach collectors, detection pipelines,
-    diagnosis modules, and remediation logic without changing
-    the lifecycle contract established here.
+    The engine owns lifecycle and interruptible waiting while an optional
+    collector runtime owns scheduling, execution, and observation publication.
     """
 
     SOURCE: Final[str] = "sentinel_x.core.engine"
@@ -54,6 +56,8 @@ class SentinelEngine:
         event_bus: EventBus,
         *,
         instance_name: str = "sentinel-x",
+        collector_registry: CollectorRegistry | None = None,
+        clock_ns: Callable[[], int] = time.monotonic_ns,
     ) -> None:
         if not isinstance(instance_name, str):
             raise TypeError("instance_name must be a string")
@@ -62,6 +66,12 @@ class SentinelEngine:
 
         if not normalized_instance_name:
             raise ValueError("instance_name must not be empty")
+        if collector_registry is not None and not isinstance(
+            collector_registry, CollectorRegistry
+        ):
+            raise TypeError("collector_registry must be a CollectorRegistry or None")
+        if not callable(clock_ns):
+            raise TypeError("clock_ns must be callable")
 
         self._event_bus = event_bus
         self._instance_name = normalized_instance_name
@@ -70,6 +80,9 @@ class SentinelEngine:
         self._run_lock = Lock()
         self._control_lock = RLock()
         self._stop_reason: str | None = None
+        self._collector_registry = collector_registry
+        self._clock_ns = clock_ns
+        self._collector_runtime: CollectorRuntime | None = None
 
     @property
     def state(self) -> AgentState:
@@ -92,6 +105,11 @@ class SentinelEngine:
                 state=self._lifecycle.state,
                 stop_requested=self._stop_event.is_set(),
                 stop_reason=self._stop_reason,
+                collector_runtime=(
+                    None
+                    if self._collector_runtime is None
+                    else self._collector_runtime.snapshot()
+                ),
             )
 
     def start(self) -> None:
@@ -100,6 +118,12 @@ class SentinelEngine:
         self._lifecycle.transition(AgentState.STARTING)
 
         try:
+            if self._collector_registry is not None:
+                self._collector_runtime = CollectorRuntime(
+                    self._event_bus,
+                    self._collector_registry,
+                    clock_ns=self._clock_ns,
+                )
             self._lifecycle.transition(AgentState.RUNNING)
 
         except Exception:
@@ -114,6 +138,7 @@ class SentinelEngine:
                 attributes={
                     "instance_name": self._instance_name,
                     "state": AgentState.RUNNING.value,
+                    "collector_runtime_enabled": (self._collector_runtime is not None),
                 },
             )
         )
@@ -217,15 +242,11 @@ class SentinelEngine:
     ) -> None:
         """Run until a graceful stop is requested.
 
-        tick_interval controls how frequently the dormant
-        Phase-0 runtime wakes.
-
-        Future phases will replace the empty tick with real
-        scheduling and operational workloads.
+        tick_interval is a maximum wake ceiling. Collector deadlines may
+        wake the engine sooner when a scheduled runtime is configured.
         """
 
-        if tick_interval <= 0:
-            raise ValueError("tick_interval must be greater than zero")
+        tick_interval = _validate_tick_interval(tick_interval)
 
         if not self._run_lock.acquire(blocking=False):
             raise EngineRunConflictError(
@@ -235,8 +256,23 @@ class SentinelEngine:
         try:
             self.start()
 
-            while not self._stop_event.wait(timeout=tick_interval):
-                self._tick()
+            while not self._stop_event.is_set():
+                runtime = self._collector_runtime
+                if runtime is None:
+                    if self._stop_event.wait(timeout=tick_interval):
+                        break
+                    self._tick()
+                    continue
+
+                runtime.run_due()
+                if self._stop_event.is_set():
+                    break
+
+                wait_seconds = runtime.next_wakeup_delay_seconds(
+                    maximum_seconds=tick_interval
+                )
+                if self._stop_event.wait(timeout=wait_seconds):
+                    break
 
         except Exception as exc:
             self._transition_to_failed()
@@ -266,7 +302,7 @@ class SentinelEngine:
     def _tick(self) -> None:
         """Perform one runtime iteration.
 
-        Phase 0 intentionally has no operational workload.
+        This compatibility hook is used only when no collector runtime is bound.
         """
 
     def _transition_to_failed(self) -> None:
@@ -293,3 +329,14 @@ class SentinelEngine:
         """Publish one control-plane event."""
 
         return self._event_bus.publish(event)
+
+
+def _validate_tick_interval(value: object) -> float:
+    """Validate the maximum engine wake interval."""
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("tick_interval must be a number")
+    normalized = float(value)
+    if not math.isfinite(normalized) or normalized <= 0.0:
+        raise ValueError("tick_interval must be finite and greater than zero")
+    return normalized

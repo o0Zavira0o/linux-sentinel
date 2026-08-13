@@ -40,14 +40,43 @@ class CollectorRegistryBindingError(CollectorRegistryError):
 
 
 class CollectorRuntimeSettings(Protocol):
-    """Structural runtime settings consumed by collector definition binding."""
+    """Read-only runtime settings consumed by collector definition binding."""
 
-    enabled: bool
-    interval_seconds: float
-    initial_delay_seconds: float
-    budget_seconds: float | None
-    failure_backoff_initial_seconds: float
-    failure_backoff_max_seconds: float
+    @property
+    def enabled(self) -> bool:
+        """Return whether the collector is enabled."""
+
+        ...
+
+    @property
+    def interval_seconds(self) -> float:
+        """Return the collector cadence in seconds."""
+
+        ...
+
+    @property
+    def initial_delay_seconds(self) -> float:
+        """Return the initial scheduling delay in seconds."""
+
+        ...
+
+    @property
+    def budget_seconds(self) -> float | None:
+        """Return the optional execution budget in seconds."""
+
+        ...
+
+    @property
+    def failure_backoff_initial_seconds(self) -> float:
+        """Return the initial failure backoff in seconds."""
+
+        ...
+
+    @property
+    def failure_backoff_max_seconds(self) -> float:
+        """Return the maximum failure backoff in seconds."""
+
+        ...
 
 
 @dataclass(frozen=True, slots=True)

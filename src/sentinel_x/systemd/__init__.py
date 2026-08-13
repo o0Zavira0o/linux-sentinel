@@ -1,5 +1,27 @@
 """Read-only systemd integration primitives for Sentinel-X."""
 
+from sentinel_x.systemd.journal_models import (
+    JournalAtom,
+    JournalField,
+    JournalPriority,
+    SystemdJournalBatch,
+    SystemdJournalCursorError,
+    SystemdJournalEntry,
+    SystemdJournalFieldError,
+    SystemdJournalModelError,
+    validate_journal_cursor,
+)
+from sentinel_x.systemd.journal_reader import (
+    JournalClock,
+    JournalctlCommandResult,
+    JournalctlCommandRunner,
+    JournalctlServiceReader,
+    SystemdJournalCommandError,
+    SystemdJournalCommandTimeoutError,
+    SystemdJournalExecutableNotFoundError,
+    SystemdJournalProtocolError,
+    SystemdJournalReadError,
+)
 from sentinel_x.systemd.models import (
     SystemdActiveState,
     SystemdModelError,
@@ -30,6 +52,13 @@ from sentinel_x.systemd.reader import (
 )
 
 __all__ = [
+    "JournalAtom",
+    "JournalClock",
+    "JournalField",
+    "JournalPriority",
+    "JournalctlCommandResult",
+    "JournalctlCommandRunner",
+    "JournalctlServiceReader",
     "ConfiguredSystemdServiceCollectors",
     "SYSTEMD_SERVICE_OBSERVATION_SOURCE",
     "SYSTEMD_SERVICE_OBSERVATION_TYPE",
@@ -38,6 +67,16 @@ __all__ = [
     "SystemdServiceCollectorError",
     "SystemdServiceEmission",
     "SystemdServiceSnapshotReader",
+    "SystemdJournalBatch",
+    "SystemdJournalCommandError",
+    "SystemdJournalCommandTimeoutError",
+    "SystemdJournalCursorError",
+    "SystemdJournalEntry",
+    "SystemdJournalExecutableNotFoundError",
+    "SystemdJournalFieldError",
+    "SystemdJournalModelError",
+    "SystemdJournalProtocolError",
+    "SystemdJournalReadError",
     "systemd_service_snapshot_to_event",
     "SystemctlCommandResult",
     "SystemctlCommandRunner",
@@ -51,5 +90,6 @@ __all__ = [
     "SystemdReadError",
     "SystemdServiceSnapshot",
     "SystemdUnitNameError",
+    "validate_journal_cursor",
     "validate_service_unit_name",
 ]

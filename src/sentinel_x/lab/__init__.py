@@ -1,5 +1,21 @@
 """Typed contracts and hardened fixtures for the Sentinel-X fault laboratory."""
 
+from sentinel_x.lab.dataset import (
+    DatasetExperimentRunner,
+    FaultDatasetArtifact,
+    FaultDatasetBenchmarkReport,
+    FaultDatasetModeReport,
+    FaultDatasetContractError,
+    FaultDatasetError,
+    FaultDatasetPlan,
+    FaultDatasetRecord,
+    FaultDatasetWriteError,
+    FaultExperimentDataset,
+    FaultMetricSummary,
+    SystemdFaultDatasetRunner,
+    build_fault_dataset_artifact,
+    build_fault_dataset_report,
+)
 from sentinel_x.lab.fixture import (
     SYSTEMD_LAB_RUNTIME_ROOT,
     SYSTEMD_LAB_UNIT_PREFIX,
@@ -49,6 +65,20 @@ from sentinel_x.lab.models import (
 )
 
 __all__ = [
+    "DatasetExperimentRunner",
+    "FaultDatasetArtifact",
+    "FaultDatasetBenchmarkReport",
+    "FaultDatasetModeReport",
+    "FaultDatasetContractError",
+    "FaultDatasetError",
+    "FaultDatasetPlan",
+    "FaultDatasetRecord",
+    "FaultDatasetWriteError",
+    "FaultExperimentDataset",
+    "FaultMetricSummary",
+    "SystemdFaultDatasetRunner",
+    "build_fault_dataset_artifact",
+    "build_fault_dataset_report",
     "SYSTEMD_LAB_RUNTIME_ROOT",
     "SYSTEMD_LAB_UNIT_PREFIX",
     "FaultExperimentManifest",

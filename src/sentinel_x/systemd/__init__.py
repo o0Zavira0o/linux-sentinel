@@ -11,6 +11,13 @@ from sentinel_x.systemd.correlation import (
     SystemdCorrelationError,
     SystemdTemporalCorrelator,
 )
+from sentinel_x.systemd.correlation_runtime import (
+    SYSTEMD_CORRELATION_OBSERVATION_SOURCE,
+    SYSTEMD_CORRELATION_OBSERVATION_TYPE,
+    SystemdCorrelationTracker,
+    SystemdCorrelationTrackerSnapshot,
+    systemd_correlation_report_to_event,
+)
 from sentinel_x.systemd.correlation_models import (
     SystemdCorrelationBasis,
     SystemdCorrelationMatch,
@@ -109,6 +116,8 @@ __all__ = [
     "JournalctlCommandResult",
     "JournalctlCommandRunner",
     "JournalctlServiceReader",
+    "SYSTEMD_CORRELATION_OBSERVATION_SOURCE",
+    "SYSTEMD_CORRELATION_OBSERVATION_TYPE",
     "SYSTEMD_JOURNAL_CHECKPOINT_SCHEMA_VERSION",
     "SYSTEMD_JOURNAL_CONTINUITY_OBSERVATION_TYPE",
     "SYSTEMD_JOURNAL_OBSERVATION_SOURCE",
@@ -129,6 +138,8 @@ __all__ = [
     "SystemdCorrelationError",
     "SystemdCorrelationMatch",
     "SystemdCorrelationModelError",
+    "SystemdCorrelationTracker",
+    "SystemdCorrelationTrackerSnapshot",
     "SystemdExecutableNotFoundError",
     "SystemdJournalBatch",
     "SystemdJournalBatchReader",
@@ -170,6 +181,7 @@ __all__ = [
     "build_journal_checkpoint",
     "normalize_boot_id",
     "read_current_boot_id",
+    "systemd_correlation_report_to_event",
     "systemd_journal_batch_to_event",
     "systemd_service_snapshot_to_event",
     "validate_journal_cursor",

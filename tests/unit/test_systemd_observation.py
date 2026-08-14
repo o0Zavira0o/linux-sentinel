@@ -21,6 +21,9 @@ from sentinel_x.systemd import (
 )
 
 
+_BOOT_ID = "a" * 32
+
+
 class FakeReader:
     """Deterministic service snapshot reader used by collector tests."""
 
@@ -85,6 +88,7 @@ class SystemdServiceObservationTests(unittest.TestCase):
         event = systemd_service_snapshot_to_event(
             _snapshot(),
             collector_name="systemd.sshd.0123456789ab",
+            boot_id=_BOOT_ID,
         )
 
         self.assertIs(event.kind, EventKind.OBSERVATION)
@@ -95,6 +99,7 @@ class SystemdServiceObservationTests(unittest.TestCase):
         )
         self.assertEqual(event.attributes["requested_name"], "sshd.service")
         self.assertEqual(event.attributes["active_state"], "active")
+        self.assertEqual(event.attributes["boot_id"], _BOOT_ID)
         self.assertEqual(event.occurred_at, _snapshot().captured_at)
 
     def test_failed_service_state_is_preserved_as_observation(self) -> None:
@@ -313,6 +318,7 @@ class SystemdServiceObservationTests(unittest.TestCase):
         configured = ConfiguredSystemdServiceCollectors(
             ((target.collector_name, target.unit_name),),
             reader=FakeReader(_snapshot()),
+            boot_id_reader=lambda: _BOOT_ID,
         )
         registry = CollectorRegistry.from_settings(
             ((target.collector_name, target),),
@@ -337,6 +343,27 @@ class SystemdServiceObservationTests(unittest.TestCase):
             events[0].attributes["observation_type"],
             SYSTEMD_SERVICE_OBSERVATION_TYPE,
         )
+        self.assertEqual(events[0].attributes["boot_id"], _BOOT_ID)
+
+    def test_collector_rejects_invalid_boot_identity_at_collection(self) -> None:
+        collector = SystemdServiceCollector(
+            "systemd.sshd.0123456789ab",
+            "sshd.service",
+            reader=FakeReader(_snapshot()),
+            boot_id_reader=lambda: "invalid",
+        )
+        with self.assertRaisesRegex(RuntimeError, "boot ID"):
+            collector.collect()
+
+    def test_collector_normalizes_hyphenated_boot_identity(self) -> None:
+        collector = SystemdServiceCollector(
+            "systemd.sshd.0123456789ab",
+            "sshd.service",
+            reader=FakeReader(_snapshot()),
+            boot_id_reader=lambda: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        )
+        emission = collector.collect()
+        self.assertEqual(emission.event.attributes["boot_id"], _BOOT_ID)
 
 
 if __name__ == "__main__":

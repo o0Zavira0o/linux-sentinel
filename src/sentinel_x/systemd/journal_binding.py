@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 
+from sentinel_x.systemd.boot import SystemBootIdReader
 from sentinel_x.systemd.journal_checkpoint import SystemdJournalCheckpointStore
 from sentinel_x.systemd.journal_observation import (
     StatefulSystemdJournalCollector,
-    SystemBootIdReader,
     SystemdJournalBatchReader,
     SystemdJournalCollectorError,
     read_current_boot_id,

@@ -49,6 +49,7 @@ def _entry(
         JournalField(name="PRIORITY", values=("6",)),
         JournalField(name="_SYSTEMD_UNIT", values=("demo.service",)),
         JournalField(name="_SYSTEMD_INVOCATION_ID", values=("f" * 32,)),
+        JournalField(name="INVOCATION_ID", values=("e" * 32,)),
         JournalField(name="_PID", values=("42",)),
         JournalField(name="_UID", values=("1000",)),
         JournalField(name="_COMM", values=("demo",)),
@@ -754,6 +755,16 @@ class StatefulJournalCollectorTests(unittest.TestCase):
         self.assertEqual(payload["collector_name"], "journal.demo.1234")
         self.assertEqual(payload["unit_name"], "demo.service")
         self.assertEqual(payload["empty_poll_count"], 1)
+
+    def test_projection_preserves_systemd_manager_invocation_id(self) -> None:
+        event = systemd_journal_batch_to_event(
+            _batch(_entry("cursor-1")),
+            collector_name="journal.demo.aaaaaaaaaaaa",
+            current_boot_id=_BOOT_A,
+        )
+        projected = event.attributes["entries"][0]
+        self.assertEqual(projected["systemd_invocation_id"], "f" * 32)
+        self.assertEqual(projected["invocation_id"], "e" * 32)
 
 
 if __name__ == "__main__":

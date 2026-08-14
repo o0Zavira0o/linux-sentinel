@@ -5,11 +5,16 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from pathlib import Path
 from threading import RLock
 from typing import Final, Protocol
 
 from sentinel_x.core.events import EventKind, EventSeverity, SentinelEvent
+from sentinel_x.systemd.boot import (
+    SystemBootIdError,
+    SystemBootIdReader,
+    normalize_boot_id,
+    read_current_boot_id as _read_current_boot_id,
+)
 from sentinel_x.systemd.journal_checkpoint import (
     SystemdJournalCheckpoint,
     SystemdJournalCheckpointError,
@@ -32,11 +37,9 @@ _DEFAULT_MAX_ENTRIES: Final[int] = 64
 _MAX_MAX_ENTRIES: Final[int] = 64
 _MAX_MESSAGE_CHARS: Final[int] = 1024
 _MAX_TEXT_FIELD_CHARS: Final[int] = 512
-_BOOT_ID_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[0-9a-fA-F]{32}$")
 _COLLECTOR_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
 )
-_BOOT_ID_PATH: Final[Path] = Path("/proc/sys/kernel/random/boot_id")
 
 
 class SystemdJournalCollectorError(RuntimeError):
@@ -49,6 +52,15 @@ class SystemdJournalCollectorContractError(SystemdJournalCollectorError):
 
 class SystemdJournalCollectorStateError(SystemdJournalCollectorError):
     """Raised when publication acknowledgment state is inconsistent."""
+
+
+def read_current_boot_id() -> str:
+    """Read current boot identity while preserving journal collector errors."""
+
+    try:
+        return _read_current_boot_id()
+    except SystemBootIdError as exc:
+        raise SystemdJournalCollectorError(str(exc)) from exc
 
 
 class SystemdJournalBatchReader(Protocol):
@@ -64,27 +76,6 @@ class SystemdJournalBatchReader(Protocol):
         """Return one bounded current-boot journal batch."""
 
         ...
-
-
-class SystemBootIdReader(Protocol):
-    """Callable contract for the currently running Linux boot ID."""
-
-    def __call__(self) -> str:
-        """Return the current boot ID as 32 hexadecimal characters."""
-
-        ...
-
-
-def read_current_boot_id() -> str:
-    """Read and normalize the current Linux boot ID from procfs."""
-
-    try:
-        raw_value = _BOOT_ID_PATH.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise SystemdJournalCollectorError(
-            f"failed to read current boot ID: {exc}"
-        ) from exc
-    return _normalize_boot_id(raw_value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -642,6 +633,7 @@ def _project_entry(entry: SystemdJournalEntry, *, index: int) -> dict[str, objec
         "message_id": _bounded_field(entry, "MESSAGE_ID"),
         "systemd_unit": _bounded_field(entry, "_SYSTEMD_UNIT"),
         "systemd_invocation_id": _bounded_field(entry, "_SYSTEMD_INVOCATION_ID"),
+        "invocation_id": _bounded_field(entry, "INVOCATION_ID"),
         "unit": _bounded_field(entry, "UNIT"),
         "object_systemd_unit": _bounded_field(entry, "OBJECT_SYSTEMD_UNIT"),
         "object_systemd_invocation_id": _bounded_field(
@@ -696,13 +688,7 @@ def _validate_max_entries(value: object) -> int:
 
 
 def _normalize_boot_id(value: object) -> str:
-    if not isinstance(value, str):
-        raise SystemdJournalCollectorContractError(
-            "boot ID reader must return a string"
-        )
-    normalized = value.strip().replace("-", "").lower()
-    if _BOOT_ID_PATTERN.fullmatch(normalized) is None:
-        raise SystemdJournalCollectorContractError(
-            "boot ID must contain exactly 32 hexadecimal characters"
-        )
-    return normalized
+    try:
+        return normalize_boot_id(value, field_name="boot ID")
+    except SystemBootIdError as exc:
+        raise SystemdJournalCollectorContractError(str(exc)) from exc

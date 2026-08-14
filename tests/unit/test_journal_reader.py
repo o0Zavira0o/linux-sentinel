@@ -115,8 +115,21 @@ class JournalctlServiceReaderTests(unittest.TestCase):
         self.assertIn("MESSAGE", output_option)
         self.assertIn("PRIORITY", output_option)
         self.assertIn("_SYSTEMD_INVOCATION_ID", output_option)
+        self.assertIn("INVOCATION_ID", output_option)
         self.assertIn("OBJECT_SYSTEMD_UNIT", output_option)
         self.assertIn("COREDUMP_UNIT", output_option)
+
+    def test_manager_invocation_id_is_preserved(self) -> None:
+        raw = _json_line().replace(
+            b'"_PID":"42"',
+            b'"INVOCATION_ID":"' + (b"d" * 32) + b'","_PID":"42"',
+        )
+        runner = RecordingRunner(JournalctlCommandResult(0, raw, b""))
+        batch = self._reader(runner).read_service("demo.service")
+        self.assertEqual(
+            batch.entries[0].single_text("INVOCATION_ID"),
+            "d" * 32,
+        )
 
     def test_unsafe_unit_is_rejected_before_runner_invocation(self) -> None:
         runner = RecordingRunner(JournalctlCommandResult(0, b"", b""))

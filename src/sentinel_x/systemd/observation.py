@@ -8,6 +8,12 @@ from dataclasses import dataclass
 from typing import Final, Protocol
 
 from sentinel_x.core.events import EventKind, SentinelEvent
+from sentinel_x.systemd.boot import (
+    SystemBootIdError,
+    SystemBootIdReader,
+    normalize_boot_id,
+    read_current_boot_id,
+)
 from sentinel_x.systemd.models import (
     SystemdServiceSnapshot,
     validate_service_unit_name,
@@ -27,6 +33,10 @@ class SystemdServiceCollectorError(RuntimeError):
 
 class SystemdServiceCollectorBindingError(SystemdServiceCollectorError):
     """Raised when configured collector bindings are ambiguous or invalid."""
+
+
+class SystemdServiceCollectorContractError(SystemdServiceCollectorError):
+    """Raised when a trusted service-observation dependency violates its contract."""
 
 
 class SystemdServiceSnapshotReader(Protocol):
@@ -67,14 +77,17 @@ def systemd_service_snapshot_to_event(
     snapshot: SystemdServiceSnapshot,
     *,
     collector_name: str,
+    boot_id: str | None = None,
 ) -> SentinelEvent:
     """Convert one typed systemd service snapshot into a SentinelEvent."""
 
     if not isinstance(snapshot, SystemdServiceSnapshot):
         raise TypeError("snapshot must be a SystemdServiceSnapshot")
     collector_name = _validate_collector_name(collector_name)
+    resolved_boot_id = _resolve_boot_id(boot_id)
 
     attributes = snapshot.to_dict()
+    attributes["boot_id"] = resolved_boot_id
     attributes["observation_type"] = SYSTEMD_SERVICE_OBSERVATION_TYPE
     attributes["collector_name"] = collector_name
 
@@ -98,6 +111,7 @@ class SystemdServiceCollector:
         unit_name: str,
         *,
         reader: SystemdServiceSnapshotReader | None = None,
+        boot_id_reader: SystemBootIdReader = read_current_boot_id,
     ) -> None:
         self._collector_name = _validate_collector_name(collector_name)
         self._unit_name = validate_service_unit_name(
@@ -107,6 +121,9 @@ class SystemdServiceCollector:
         self._reader: SystemdServiceSnapshotReader = (
             SystemctlServiceReader() if reader is None else reader
         )
+        if not callable(boot_id_reader):
+            raise TypeError("boot_id_reader must be callable")
+        self._boot_id_reader = boot_id_reader
 
     @property
     def name(self) -> str:
@@ -124,9 +141,17 @@ class SystemdServiceCollector:
         """Read one service snapshot and emit its typed observation event."""
 
         snapshot = self._reader.read_service(self._unit_name)
+        try:
+            boot_id = normalize_boot_id(
+                self._boot_id_reader(),
+                field_name="current boot ID",
+            )
+        except SystemBootIdError as exc:
+            raise SystemdServiceCollectorContractError(str(exc)) from exc
         event = systemd_service_snapshot_to_event(
             snapshot,
             collector_name=self._collector_name,
+            boot_id=boot_id,
         )
         return SystemdServiceEmission(
             collector_name=self._collector_name,
@@ -142,12 +167,15 @@ class ConfiguredSystemdServiceCollectors:
         bindings: Iterable[tuple[str, str]],
         *,
         reader: SystemdServiceSnapshotReader | None = None,
+        boot_id_reader: SystemBootIdReader = read_current_boot_id,
     ) -> None:
         normalized = tuple(bindings)
         if not normalized:
             self._collectors: tuple[SystemdServiceCollector, ...] = ()
             return
 
+        if not callable(boot_id_reader):
+            raise TypeError("boot_id_reader must be callable")
         collector_names: list[str] = []
         unit_names: list[str] = []
         collectors: list[SystemdServiceCollector] = []
@@ -166,6 +194,7 @@ class ConfiguredSystemdServiceCollectors:
                 collector_name,
                 unit_name,
                 reader=shared_reader,
+                boot_id_reader=boot_id_reader,
             )
             collector_names.append(collector.name)
             unit_names.append(collector.unit_name)
@@ -191,6 +220,14 @@ class ConfiguredSystemdServiceCollectors:
         """Return the exact trusted handler mapping consumed by the registry."""
 
         return {collector.name: collector.collect for collector in self._collectors}
+
+
+def _resolve_boot_id(value: str | None) -> str:
+    try:
+        raw_value = read_current_boot_id() if value is None else value
+        return normalize_boot_id(raw_value, field_name="boot_id")
+    except SystemBootIdError as exc:
+        raise SystemdServiceCollectorContractError(str(exc)) from exc
 
 
 def _validate_collector_name(value: object) -> str:

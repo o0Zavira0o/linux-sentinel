@@ -11,6 +11,13 @@ from sentinel_x.systemd.correlation import (
     SystemdCorrelationError,
     SystemdTemporalCorrelator,
 )
+from sentinel_x.systemd.correlation_bridge import (
+    SystemdCorrelationBridgeContractError,
+    SystemdCorrelationBridgeError,
+    SystemdCorrelationBridgePublicationError,
+    SystemdCorrelationBridgeSnapshot,
+    SystemdCorrelationEventBridge,
+)
 from sentinel_x.systemd.correlation_runtime import (
     SYSTEMD_CORRELATION_OBSERVATION_SOURCE,
     SYSTEMD_CORRELATION_OBSERVATION_TYPE,
@@ -134,6 +141,11 @@ __all__ = [
     "SystemdCommandError",
     "SystemdCommandTimeoutError",
     "SystemdCorrelationBasis",
+    "SystemdCorrelationBridgeContractError",
+    "SystemdCorrelationBridgeError",
+    "SystemdCorrelationBridgePublicationError",
+    "SystemdCorrelationBridgeSnapshot",
+    "SystemdCorrelationEventBridge",
     "SystemdCorrelationContractError",
     "SystemdCorrelationError",
     "SystemdCorrelationMatch",

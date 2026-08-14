@@ -71,6 +71,8 @@ from sentinel_x.systemd import (
     AtomicSystemdJournalCheckpointStore,
     ConfiguredSystemdJournalCollectors,
     ConfiguredSystemdServiceCollectors,
+    SystemdCorrelationBridgeError,
+    SystemdCorrelationEventBridge,
     SystemdJournalCollectorError,
     SystemdServiceCollectorError,
 )
@@ -250,6 +252,16 @@ def _apply_run_overrides(
     )
 
 
+def _systemd_correlation_target_count(config: SentinelConfig) -> int:
+    """Return targets that emit both service-state and journal evidence."""
+
+    return sum(
+        1
+        for service in config.systemd.services
+        if service.enabled and service.journal_enabled
+    )
+
+
 def _run_config_check(args: Namespace) -> int:
     """Validate configuration without starting Sentinel-X."""
 
@@ -271,6 +283,8 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Flush on write: {config.storage.flush_on_write}")
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    correlation_targets = _systemd_correlation_target_count(config)
+    print(f"Systemd correlation targets: {correlation_targets}")
     print(
         "Systemd journal checkpointing: "
         f"{'enabled' if config.systemd.journal_checkpoint_enabled else 'disabled'}"
@@ -975,6 +989,8 @@ def _run_engine(args: Namespace) -> int:
     )
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    correlation_targets = _systemd_correlation_target_count(config)
+    print(f"Systemd correlation targets: {correlation_targets}")
     print(
         "Systemd journal checkpointing: "
         f"{'enabled' if config.systemd.journal_checkpoint_enabled else 'disabled'}"
@@ -1016,6 +1032,15 @@ def _run_engine(args: Namespace) -> int:
     else:
         print("Event store: disabled")
 
+    correlation_bridge: SystemdCorrelationEventBridge | None = None
+    if correlation_targets > 0:
+        correlation_bridge = SystemdCorrelationEventBridge(event_bus)
+
+    print(
+        "Systemd live correlation: "
+        f"{'enabled' if correlation_bridge is not None else 'disabled'}"
+    )
+
     engine = SentinelEngine(
         event_bus=event_bus,
         instance_name=config.agent.instance_name,
@@ -1050,6 +1075,7 @@ def _run_engine(args: Namespace) -> int:
     )
 
     storage_failed = False
+    correlation_failed = False
 
     try:
         engine.run_forever(tick_interval=config.agent.tick_interval)
@@ -1069,6 +1095,28 @@ def _run_engine(args: Namespace) -> int:
             signal.SIGTERM,
             previous_sigterm,
         )
+
+        if correlation_bridge is not None:
+            try:
+                correlation_bridge.close()
+
+            except SystemdCorrelationBridgeError as exc:
+                print(
+                    f"correlation runtime error during shutdown: {exc}",
+                    file=sys.stderr,
+                )
+                correlation_failed = True
+
+            bridge_snapshot = correlation_bridge.snapshot()
+            if bridge_snapshot.tracker_ingest_failures > 0:
+                print(
+                    "correlation runtime observed "
+                    f"{bridge_snapshot.tracker_ingest_failures} ingest failure(s)",
+                    file=sys.stderr,
+                )
+                correlation_failed = True
+            if bridge_snapshot.pending_derived_events > 0:
+                correlation_failed = True
 
         if recorder is not None:
             if recorder.last_error is not None:
@@ -1092,6 +1140,8 @@ def _run_engine(args: Namespace) -> int:
 
     if storage_failed:
         return 3
+    if correlation_failed:
+        return 1
 
     return 0
 

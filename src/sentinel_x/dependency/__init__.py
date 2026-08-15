@@ -44,6 +44,22 @@ from sentinel_x.dependency.models import (
     DependencySemanticClass,
     source_property_for_relation,
 )
+from sentinel_x.dependency.propagation import (
+    FAULT_PROPAGATION_EVIDENCE_SCHEMA_VERSION,
+    DependencyPropagationCandidate,
+    FaultPropagationEvidenceContractError,
+    FaultPropagationEvidenceError,
+    PairwiseFaultPropagationEvidence,
+    PairwiseTemporalFinding,
+    PairwiseTemporalInterpretation,
+    SystemdAssessmentEvidence,
+    SystemdIncidentTemporalEvidence,
+    TemporalEvidenceBasis,
+    bind_systemd_assessment_evidence,
+    bind_systemd_incident_temporal_evidence,
+    build_dependency_propagation_candidates,
+    evaluate_pairwise_fault_propagation,
+)
 from sentinel_x.dependency.systemd import (
     SystemdDependencyEvidenceContractError,
     SystemdDependencyEvidenceError,
@@ -52,6 +68,16 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "FAULT_PROPAGATION_EVIDENCE_SCHEMA_VERSION",
+    "DependencyPropagationCandidate",
+    "FaultPropagationEvidenceContractError",
+    "FaultPropagationEvidenceError",
+    "PairwiseFaultPropagationEvidence",
+    "PairwiseTemporalFinding",
+    "PairwiseTemporalInterpretation",
+    "SystemdAssessmentEvidence",
+    "SystemdIncidentTemporalEvidence",
+    "TemporalEvidenceBasis",
     "DEPENDENCY_EVIDENCE_SCHEMA_VERSION",
     "DEPENDENCY_GRAPH_SCHEMA_VERSION",
     "DependencyGraphCapacityError",
@@ -89,8 +115,12 @@ __all__ = [
     "SystemdDependencyProtocolError",
     "SystemdDependencyReadError",
     "SystemdDependencyUnitSnapshot",
+    "bind_systemd_assessment_evidence",
+    "bind_systemd_incident_temporal_evidence",
     "build_dependency_graph",
+    "build_dependency_propagation_candidates",
     "compare_dependency_graphs",
+    "evaluate_pairwise_fault_propagation",
     "project_systemd_dependency_evidence",
     "source_property_for_relation",
     "validate_systemd_unit_identity",

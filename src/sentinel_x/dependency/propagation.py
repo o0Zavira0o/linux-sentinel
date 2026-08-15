@@ -87,6 +87,7 @@ class PairwiseTemporalFinding(StrEnum):
     FORWARD_OUTSIDE_WINDOW = "forward_outside_window"
     SIMULTANEOUS = "simultaneous"
     REVERSE_SEQUENCE = "reverse_sequence"
+    TEMPORAL_BASIS_LIMITED = "temporal_basis_limited"
 
 
 class PairwiseTemporalInterpretation(StrEnum):
@@ -96,6 +97,14 @@ class PairwiseTemporalInterpretation(StrEnum):
     OUTSIDE_ANALYSIS_WINDOW = "outside_analysis_window"
     AMBIGUOUS_SIMULTANEOUS = "ambiguous_simultaneous"
     COUNTEREVIDENCE_TO_CANDIDATE_DIRECTION = "counterevidence_to_candidate_direction"
+    INSUFFICIENT_TRANSITION_TIMING = "insufficient_transition_timing"
+
+
+class PairwiseTemporalComparability(StrEnum):
+    """Whether both temporal anchors represent actual systemd state changes."""
+
+    STATE_CHANGE_ALIGNED = "state_change_aligned"
+    ASSESSMENT_FALLBACK_PRESENT = "assessment_fallback_present"
 
 
 @dataclass(frozen=True, slots=True)
@@ -468,6 +477,17 @@ class PairwiseFaultPropagationEvidence:
     causal_claim: bool = False
     probabilistic_confidence_assigned: bool = False
 
+    @property
+    def temporal_comparability(self) -> PairwiseTemporalComparability:
+        if (
+            self.source_incident.temporal_basis
+            is TemporalEvidenceBasis.STATE_CHANGE_MONOTONIC
+            and self.affected_incident.temporal_basis
+            is TemporalEvidenceBasis.STATE_CHANGE_MONOTONIC
+        ):
+            return PairwiseTemporalComparability.STATE_CHANGE_ALIGNED
+        return PairwiseTemporalComparability.ASSESSMENT_FALLBACK_PRESENT
+
     def __post_init__(self) -> None:
         if _PROPAGATION_EVIDENCE_ID_PATTERN.fullmatch(self.evidence_id) is None:
             raise FaultPropagationEvidenceContractError(
@@ -503,7 +523,9 @@ class PairwiseFaultPropagationEvidence:
                 "Phase 5D pairwise evidence must not assign confidence"
             )
         self._validate_cross_evidence_contract()
-        expected_finding, expected_interpretation = _classify_pairwise_offset(
+        expected_finding, expected_interpretation = _classify_pairwise_evidence(
+            self.source_incident,
+            self.affected_incident,
             self.signed_offset_usec,
             analysis_window_usec=self.analysis_window_usec,
         )
@@ -571,6 +593,7 @@ class PairwiseFaultPropagationEvidence:
             "affected_temporal_usec": self.affected_incident.temporal_usec,
             "analysis_window_usec": self.analysis_window_usec,
             "signed_offset_usec": self.signed_offset_usec,
+            "temporal_comparability": self.temporal_comparability.value,
             "finding": self.finding.value,
             "interpretation": self.interpretation.value,
             "ordering_context": [list(key) for key in self.candidate.ordering_context],
@@ -578,6 +601,10 @@ class PairwiseFaultPropagationEvidence:
                 self.candidate.requirement_observed_at.isoformat()
             ),
             "topology_temporal_applicability_claim": False,
+            "transition_order_claim_assigned": (
+                self.temporal_comparability
+                is PairwiseTemporalComparability.STATE_CHANGE_ALIGNED
+            ),
             "causal_claim": False,
             "propagation_claim_assigned": False,
             "root_cause_claim_assigned": False,
@@ -774,7 +801,9 @@ def evaluate_pairwise_fault_propagation(
         )
     _validate_analysis_window(analysis_window_usec)
     signed_offset_usec = affected_incident.temporal_usec - source_incident.temporal_usec
-    finding, interpretation = _classify_pairwise_offset(
+    finding, interpretation = _classify_pairwise_evidence(
+        source_incident,
+        affected_incident,
         signed_offset_usec,
         analysis_window_usec=analysis_window_usec,
     )
@@ -794,6 +823,29 @@ def evaluate_pairwise_fault_propagation(
         signed_offset_usec=signed_offset_usec,
         finding=finding,
         interpretation=interpretation,
+    )
+
+
+def _classify_pairwise_evidence(
+    source_incident: SystemdIncidentTemporalEvidence,
+    affected_incident: SystemdIncidentTemporalEvidence,
+    signed_offset_usec: int,
+    *,
+    analysis_window_usec: int,
+) -> tuple[PairwiseTemporalFinding, PairwiseTemporalInterpretation]:
+    if (
+        source_incident.temporal_basis
+        is not TemporalEvidenceBasis.STATE_CHANGE_MONOTONIC
+        or affected_incident.temporal_basis
+        is not TemporalEvidenceBasis.STATE_CHANGE_MONOTONIC
+    ):
+        return (
+            PairwiseTemporalFinding.TEMPORAL_BASIS_LIMITED,
+            PairwiseTemporalInterpretation.INSUFFICIENT_TRANSITION_TIMING,
+        )
+    return _classify_pairwise_offset(
+        signed_offset_usec,
+        analysis_window_usec=analysis_window_usec,
     )
 
 

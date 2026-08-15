@@ -23,6 +23,7 @@ from sentinel_x.dependency.models import (
 )
 from sentinel_x.dependency.propagation import (
     FaultPropagationEvidenceContractError,
+    PairwiseTemporalComparability,
     PairwiseTemporalFinding,
     PairwiseTemporalInterpretation,
     TemporalEvidenceBasis,
@@ -713,6 +714,163 @@ class DependencyPropagationTests(unittest.TestCase):
             PairwiseTemporalInterpretation.COUNTEREVIDENCE_TO_CANDIDATE_DIRECTION,
         )
 
+    def test_pairwise_source_assessment_fallback_is_basis_limited(self) -> None:
+        candidate = build_dependency_propagation_candidates(_graph())[0]
+        source = _incident_evidence(
+            unit="dependency.service",
+            event_id="evt-source-fallback",
+            assessment_hex="9",
+            incident_hex="9",
+            assessed_usec=1_000_000,
+            state_change_usec=None,
+        )
+        affected = _incident_evidence(
+            unit="dependent.service",
+            event_id="evt-affected-exact",
+            assessment_hex="a",
+            incident_hex="a",
+            assessed_usec=950_000,
+            state_change_usec=900_000,
+        )
+
+        evidence = evaluate_pairwise_fault_propagation(
+            candidate,
+            source,
+            affected,
+            analysis_window_usec=500_000,
+        )
+
+        self.assertEqual(evidence.signed_offset_usec, -100_000)
+        self.assertEqual(
+            evidence.temporal_comparability,
+            PairwiseTemporalComparability.ASSESSMENT_FALLBACK_PRESENT,
+        )
+        self.assertEqual(
+            evidence.finding, PairwiseTemporalFinding.TEMPORAL_BASIS_LIMITED
+        )
+        self.assertEqual(
+            evidence.interpretation,
+            PairwiseTemporalInterpretation.INSUFFICIENT_TRANSITION_TIMING,
+        )
+
+    def test_pairwise_affected_assessment_fallback_is_basis_limited(self) -> None:
+        candidate = build_dependency_propagation_candidates(_graph())[0]
+        source = _incident_evidence(
+            unit="dependency.service",
+            event_id="evt-source-exact",
+            assessment_hex="b",
+            incident_hex="b",
+            assessed_usec=950_000,
+            state_change_usec=900_000,
+        )
+        affected = _incident_evidence(
+            unit="dependent.service",
+            event_id="evt-affected-fallback",
+            assessment_hex="c",
+            incident_hex="c",
+            assessed_usec=1_300_000,
+            state_change_usec=None,
+        )
+
+        evidence = evaluate_pairwise_fault_propagation(
+            candidate,
+            source,
+            affected,
+            analysis_window_usec=500_000,
+        )
+
+        self.assertEqual(evidence.signed_offset_usec, 400_000)
+        self.assertEqual(
+            evidence.temporal_comparability,
+            PairwiseTemporalComparability.ASSESSMENT_FALLBACK_PRESENT,
+        )
+        self.assertEqual(
+            evidence.finding, PairwiseTemporalFinding.TEMPORAL_BASIS_LIMITED
+        )
+        self.assertEqual(
+            evidence.interpretation,
+            PairwiseTemporalInterpretation.INSUFFICIENT_TRANSITION_TIMING,
+        )
+
+    def test_pairwise_both_assessment_fallbacks_are_basis_limited(self) -> None:
+        candidate = build_dependency_propagation_candidates(_graph())[0]
+        source = _incident_evidence(
+            unit="dependency.service",
+            event_id="evt-source-both-fallback",
+            assessment_hex="d",
+            incident_hex="d",
+            assessed_usec=1_000_000,
+            state_change_usec=None,
+        )
+        affected = _incident_evidence(
+            unit="dependent.service",
+            event_id="evt-affected-both-fallback",
+            assessment_hex="e",
+            incident_hex="e",
+            assessed_usec=1_200_000,
+            state_change_usec=None,
+        )
+
+        evidence = evaluate_pairwise_fault_propagation(
+            candidate,
+            source,
+            affected,
+            analysis_window_usec=500_000,
+        )
+
+        self.assertEqual(
+            evidence.temporal_comparability,
+            PairwiseTemporalComparability.ASSESSMENT_FALLBACK_PRESENT,
+        )
+        self.assertEqual(
+            evidence.finding, PairwiseTemporalFinding.TEMPORAL_BASIS_LIMITED
+        )
+        self.assertEqual(
+            evidence.interpretation,
+            PairwiseTemporalInterpretation.INSUFFICIENT_TRANSITION_TIMING,
+        )
+
+    def test_exact_state_change_pair_assigns_transition_order_only(self) -> None:
+        candidate = build_dependency_propagation_candidates(_graph())[0]
+        source = _incident_evidence(
+            unit="dependency.service",
+            event_id="evt-source-transition-order",
+            assessment_hex="f",
+            incident_hex="f",
+            assessed_usec=1_000_000,
+            state_change_usec=900_000,
+        )
+        affected = _incident_evidence(
+            unit="dependent.service",
+            event_id="evt-affected-transition-order",
+            assessment_hex="0",
+            incident_hex="0",
+            assessed_usec=1_300_000,
+            state_change_usec=1_200_000,
+        )
+
+        exact = evaluate_pairwise_fault_propagation(
+            candidate, source, affected, analysis_window_usec=500_000
+        )
+        self.assertEqual(
+            exact.temporal_comparability,
+            PairwiseTemporalComparability.STATE_CHANGE_ALIGNED,
+        )
+        self.assertTrue(exact.to_dict()["transition_order_claim_assigned"])
+
+        fallback_source = _incident_evidence(
+            unit="dependency.service",
+            event_id="evt-source-no-transition-order",
+            assessment_hex="1",
+            incident_hex="1",
+            assessed_usec=1_000_000,
+            state_change_usec=None,
+        )
+        limited = evaluate_pairwise_fault_propagation(
+            candidate, fallback_source, affected, analysis_window_usec=500_000
+        )
+        self.assertFalse(limited.to_dict()["transition_order_claim_assigned"])
+
     def test_pairwise_rejects_cross_boot_incidents(self) -> None:
         candidate = build_dependency_propagation_candidates(_graph())[0]
         source = _incident_evidence(
@@ -893,6 +1051,11 @@ class DependencyPropagationTests(unittest.TestCase):
 
         self.assertFalse(payload["causal_claim"])
         self.assertFalse(payload["topology_temporal_applicability_claim"])
+        self.assertTrue(payload["transition_order_claim_assigned"])
+        self.assertEqual(
+            payload["temporal_comparability"],
+            PairwiseTemporalComparability.STATE_CHANGE_ALIGNED.value,
+        )
         self.assertFalse(payload["propagation_claim_assigned"])
         self.assertFalse(payload["root_cause_claim_assigned"])
         self.assertFalse(payload["probabilistic_confidence_assigned"])

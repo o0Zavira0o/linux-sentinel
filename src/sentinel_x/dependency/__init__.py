@@ -1,5 +1,24 @@
 """Dependency evidence primitives for Sentinel-X causal reasoning phases."""
 
+from sentinel_x.dependency.discovery import (
+    SYSTEMD_DEPENDENCY_DISCOVERY_SCHEMA_VERSION,
+    SYSTEMD_DEPENDENCY_OBSERVATION_SOURCE,
+    SYSTEMD_DEPENDENCY_OBSERVATION_TYPE,
+    DiscoveredSystemdUnit,
+    SystemctlDependencyUnitReader,
+    SystemdDependencyCommandError,
+    SystemdDependencyCommandTimeoutError,
+    SystemdDependencyDiscovery,
+    SystemdDependencyDiscoveryCapacityError,
+    SystemdDependencyDiscoveryError,
+    SystemdDependencyDiscoveryFailure,
+    SystemdDependencyDiscoveryReport,
+    SystemdDependencyExecutableNotFoundError,
+    SystemdDependencyProtocolError,
+    SystemdDependencyReadError,
+    SystemdDependencyUnitSnapshot,
+    validate_systemd_unit_identity,
+)
 from sentinel_x.dependency.models import (
     DEPENDENCY_EVIDENCE_SCHEMA_VERSION,
     DependencyConfigurationOrigin,
@@ -21,6 +40,9 @@ from sentinel_x.dependency.systemd import (
 
 __all__ = [
     "DEPENDENCY_EVIDENCE_SCHEMA_VERSION",
+    "SYSTEMD_DEPENDENCY_DISCOVERY_SCHEMA_VERSION",
+    "SYSTEMD_DEPENDENCY_OBSERVATION_SOURCE",
+    "SYSTEMD_DEPENDENCY_OBSERVATION_TYPE",
     "DependencyConfigurationOrigin",
     "DependencyEndpoint",
     "DependencyEntityKind",
@@ -29,9 +51,23 @@ __all__ = [
     "DependencyModelError",
     "DependencyRelation",
     "DependencySemanticClass",
+    "DiscoveredSystemdUnit",
+    "SystemctlDependencyUnitReader",
+    "SystemdDependencyCommandError",
+    "SystemdDependencyCommandTimeoutError",
+    "SystemdDependencyDiscovery",
+    "SystemdDependencyDiscoveryCapacityError",
+    "SystemdDependencyDiscoveryError",
+    "SystemdDependencyDiscoveryFailure",
+    "SystemdDependencyDiscoveryReport",
     "SystemdDependencyEvidenceContractError",
     "SystemdDependencyEvidenceError",
     "SystemdDependencyEvidenceSet",
+    "SystemdDependencyExecutableNotFoundError",
+    "SystemdDependencyProtocolError",
+    "SystemdDependencyReadError",
+    "SystemdDependencyUnitSnapshot",
     "project_systemd_dependency_evidence",
     "source_property_for_relation",
+    "validate_systemd_unit_identity",
 ]

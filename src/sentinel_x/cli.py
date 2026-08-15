@@ -20,6 +20,10 @@ from sentinel_x.config import (
     SentinelConfig,
     load_config,
 )
+from sentinel_x.detection.bridge import (
+    SystemdDetectionBridgeError,
+    SystemdDetectionEventBridge,
+)
 from sentinel_x.core import (
     CollectorDefinitionValidationError,
     CollectorRegistry,
@@ -262,6 +266,12 @@ def _systemd_correlation_target_count(config: SentinelConfig) -> int:
     )
 
 
+def _systemd_detection_target_count(config: SentinelConfig) -> int:
+    """Return enabled service-state targets eligible for live detection."""
+
+    return sum(1 for service in config.systemd.services if service.enabled)
+
+
 def _run_config_check(args: Namespace) -> int:
     """Validate configuration without starting Sentinel-X."""
 
@@ -283,7 +293,9 @@ def _run_config_check(args: Namespace) -> int:
     print(f"Flush on write: {config.storage.flush_on_write}")
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    detection_targets = _systemd_detection_target_count(config)
     correlation_targets = _systemd_correlation_target_count(config)
+    print(f"Systemd detection targets: {detection_targets}")
     print(f"Systemd correlation targets: {correlation_targets}")
     print(
         "Systemd journal checkpointing: "
@@ -301,7 +313,10 @@ def _run_config_check(args: Namespace) -> int:
 def _print_event(event: SentinelEvent) -> None:
     """Render a concise Sentinel-X event."""
 
-    print(f"[{event.severity.value.upper()}] {event.kind.value}: {event.message}")
+    print(
+        f"[{event.severity.value.upper()}] {event.kind.value}: {event.message}",
+        flush=True,
+    )
 
 
 def _print_host_observation_summary(
@@ -989,7 +1004,9 @@ def _run_engine(args: Namespace) -> int:
     )
     print(f"Systemd service targets: {len(config.systemd.services)}")
     print(f"Systemd journal targets: {config.systemd.journal_target_count}")
+    detection_targets = _systemd_detection_target_count(config)
     correlation_targets = _systemd_correlation_target_count(config)
+    print(f"Systemd detection targets: {detection_targets}")
     print(f"Systemd correlation targets: {correlation_targets}")
     print(
         "Systemd journal checkpointing: "
@@ -1041,6 +1058,16 @@ def _run_engine(args: Namespace) -> int:
         f"{'enabled' if correlation_bridge is not None else 'disabled'}"
     )
 
+    detection_bridge: SystemdDetectionEventBridge | None = None
+    if detection_targets > 0:
+        detection_bridge = SystemdDetectionEventBridge(event_bus)
+
+    print(
+        "Systemd live detection: "
+        f"{'enabled' if detection_bridge is not None else 'disabled'}",
+        flush=True,
+    )
+
     engine = SentinelEngine(
         event_bus=event_bus,
         instance_name=config.agent.instance_name,
@@ -1076,6 +1103,7 @@ def _run_engine(args: Namespace) -> int:
 
     storage_failed = False
     correlation_failed = False
+    detection_failed = False
 
     try:
         engine.run_forever(tick_interval=config.agent.tick_interval)
@@ -1118,6 +1146,46 @@ def _run_engine(args: Namespace) -> int:
             if bridge_snapshot.pending_derived_events > 0:
                 correlation_failed = True
 
+        if detection_bridge is not None:
+            try:
+                detection_bridge.close()
+
+            except SystemdDetectionBridgeError as exc:
+                print(
+                    f"detection runtime error during shutdown: {exc}",
+                    file=sys.stderr,
+                )
+                detection_failed = True
+
+            detection_snapshot = detection_bridge.snapshot()
+            if detection_snapshot.detection_failures > 0:
+                print(
+                    "detection runtime observed "
+                    f"{detection_snapshot.detection_failures} detector failure(s)",
+                    file=sys.stderr,
+                )
+                detection_failed = True
+            if detection_snapshot.tracker_process_failures > 0:
+                print(
+                    "detection runtime observed "
+                    f"{detection_snapshot.tracker_process_failures} "
+                    "incident-tracker failure(s)",
+                    file=sys.stderr,
+                )
+                detection_failed = True
+            if detection_snapshot.contract_failures > 0:
+                print(
+                    "detection runtime observed "
+                    f"{detection_snapshot.contract_failures} "
+                    "bridge contract failure(s)",
+                    file=sys.stderr,
+                )
+                detection_failed = True
+            if detection_snapshot.pending_lifecycle_events > 0:
+                detection_failed = True
+            if detection_snapshot.deferred_service_observations > 0:
+                detection_failed = True
+
         if recorder is not None:
             if recorder.last_error is not None:
                 print(
@@ -1140,7 +1208,7 @@ def _run_engine(args: Namespace) -> int:
 
     if storage_failed:
         return 3
-    if correlation_failed:
+    if correlation_failed or detection_failed:
         return 1
 
     return 0

@@ -11,6 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Final, Protocol
 
+from sentinel_x.systemd.systemctl_codec import (
+    SystemctlStringArrayDecodeError,
+    decode_systemctl_string_array,
+)
+
 from sentinel_x.systemd.models import (
     SystemdModelError,
     SystemdServiceSnapshot,
@@ -233,7 +238,12 @@ def _optional_text(value: str | None) -> str | None:
 def _parse_words(value: str | None) -> tuple[str, ...]:
     if value is None or value == "":
         return ()
-    words = tuple(value.split())
+    try:
+        words = decode_systemctl_string_array(value)
+    except SystemctlStringArrayDecodeError as exc:
+        raise SystemdProtocolError(
+            "systemctl list property contains invalid shell-quoted entries"
+        ) from exc
     if len(set(words)) != len(words):
         raise SystemdProtocolError("systemctl list property contains duplicate entries")
     return words

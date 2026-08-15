@@ -134,6 +134,8 @@ class SystemdDependencyDiscoveryTests(unittest.TestCase):
             " network.target",
             "network.target ",
             "a/b.service",
+            '"quoted.service"',
+            "'quoted.service'",
             "nosuffix",
         ):
             with self.subTest(value=value):
@@ -215,6 +217,55 @@ class SystemdDependencyDiscoveryTests(unittest.TestCase):
         self.assertEqual(snapshot.canonical_name, "real.service")
         self.assertEqual(snapshot.names, ("real.service", "alias.service"))
         self.assertEqual(snapshot.requires, ("dbus.socket", "-.mount"))
+
+    def test_reader_decodes_systemctl_shell_quoted_unit_names(self) -> None:
+        runner = _CaptureRunner(
+            SystemctlCommandResult(
+                returncode=0,
+                stdout=_stdout(
+                    "demo.service",
+                    after=(
+                        r'"blockdev@dev-disk-by\\x2duuid-A.target" '
+                        "network.target"
+                    ),
+                ),
+                stderr=b"",
+            )
+        )
+        reader = SystemctlDependencyUnitReader(
+            systemctl_path="/usr/bin/systemctl",
+            runner=runner,
+            clock=lambda: _NOW,
+        )
+        snapshot = reader.read_unit("demo.service")
+        self.assertEqual(
+            snapshot.after,
+            (
+                r"blockdev@dev-disk-by\x2duuid-A.target",
+                "network.target",
+            ),
+        )
+
+    def test_reader_rejects_malformed_shell_quoted_unit_names(self) -> None:
+        reader = SystemctlDependencyUnitReader(
+            systemctl_path="/usr/bin/systemctl",
+            runner=_CaptureRunner(
+                SystemctlCommandResult(
+                    returncode=0,
+                    stdout=_stdout(
+                        "demo.service",
+                        after='"unterminated.target',
+                    ),
+                    stderr=b"",
+                )
+            ),
+            clock=lambda: _NOW,
+        )
+        with self.assertRaisesRegex(
+            SystemdDependencyProtocolError,
+            "shell-quoted",
+        ):
+            reader.read_unit("demo.service")
 
     def test_reader_rejects_missing_property(self) -> None:
         output = _stdout("demo.service").replace(b"Before=\n", b"")

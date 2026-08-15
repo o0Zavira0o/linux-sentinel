@@ -38,6 +38,10 @@ from sentinel_x.systemd.boot import (
     read_current_boot_id,
 )
 from sentinel_x.systemd.reader import SystemctlCommandResult
+from sentinel_x.systemd.systemctl_codec import (
+    SystemctlStringArrayDecodeError,
+    decode_systemctl_string_array,
+)
 
 SYSTEMD_DEPENDENCY_DISCOVERY_SCHEMA_VERSION: Final[str] = (
     "sentinel-x.systemd-dependency-discovery.v1"
@@ -634,6 +638,8 @@ def validate_systemd_unit_identity(value: str, *, field_name: str) -> str:
     if (
         "\x00" in value
         or "/" in value
+        or '"' in value
+        or "'" in value
         or any(character.isspace() for character in value)
     ):
         raise SystemdDependencyProtocolError(
@@ -889,7 +895,12 @@ def _parse_names(
 def _parse_unit_words(value: str, *, property_name: str) -> tuple[str, ...]:
     if not value:
         return ()
-    words = tuple(value.split())
+    try:
+        words = decode_systemctl_string_array(value)
+    except SystemctlStringArrayDecodeError as exc:
+        raise SystemdDependencyProtocolError(
+            f"{property_name} contains invalid shell-quoted unit names"
+        ) from exc
     if len(words) > _MAX_PROPERTY_ENTRIES:
         raise SystemdDependencyProtocolError(
             f"{property_name} exceeds the bounded entry limit"

@@ -106,6 +106,53 @@ class SystemctlServiceReaderTests(unittest.TestCase):
         self.assertIsNone(snapshot.inactive_enter_monotonic_usec)
         self.assertEqual(snapshot.captured_at, _CAPTURED_AT)
 
+    def test_shell_quoted_dependency_entries_are_decoded(self) -> None:
+        reader, _ = self._reader(
+            SystemctlCommandResult(
+                0,
+                _valid_output(
+                    After=(
+                        r'"blockdev@dev-disk-by\\x2duuid-A.target" '
+                        "network.target"
+                    )
+                ),
+                b"",
+            ),
+        )
+        snapshot = reader.read_service("sshd.service")
+        self.assertEqual(
+            snapshot.after,
+            (
+                r"blockdev@dev-disk-by\x2duuid-A.target",
+                "network.target",
+            ),
+        )
+
+    def test_shell_quoted_drop_in_path_restores_space_and_dollar(self) -> None:
+        reader, _ = self._reader(
+            SystemctlCommandResult(
+                0,
+                _valid_output(DropInPaths=r'"/etc/systemd/system/a b\$c.conf"'),
+                b"",
+            ),
+        )
+        snapshot = reader.read_service("sshd.service")
+        self.assertEqual(
+            snapshot.drop_in_paths,
+            ("/etc/systemd/system/a b$c.conf",),
+        )
+
+    def test_malformed_shell_quoted_dependency_entry_is_rejected(self) -> None:
+        reader, _ = self._reader(
+            SystemctlCommandResult(
+                0,
+                _valid_output(After='"unterminated.target'),
+                b"",
+            ),
+        )
+        with self.assertRaisesRegex(SystemdProtocolError, "shell-quoted"):
+            reader.read_service("sshd.service")
+
     def test_command_is_explicit_system_read_only_show(self) -> None:
         reader, runner = self._reader(
             SystemctlCommandResult(0, _valid_output(), b""),

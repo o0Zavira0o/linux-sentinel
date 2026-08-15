@@ -1,5 +1,20 @@
 """Dependency evidence primitives for Sentinel-X causal reasoning phases."""
 
+from sentinel_x.dependency.coverage import (
+    DEFAULT_MAX_COVERAGE_INPUT_ASSESSMENTS,
+    MAX_COVERAGE_INPUT_ASSESSMENTS,
+    PROPAGATION_COVERAGE_SCHEMA_VERSION,
+    AssessmentCoverageOutcome,
+    PropagationCoverageCapacityError,
+    PropagationCoverageContractError,
+    PropagationCoverageError,
+    PropagationCoverageEvidence,
+    PropagationCoverageInterpretation,
+    PropagationEndpointObservability,
+    SamplingCoverageStatus,
+    evaluate_propagation_sampling_coverage,
+    propagation_candidate_observability,
+)
 from sentinel_x.dependency.discovery import (
     SYSTEMD_DEPENDENCY_DISCOVERY_SCHEMA_VERSION,
     SYSTEMD_DEPENDENCY_OBSERVATION_SOURCE,
@@ -69,6 +84,17 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "DEFAULT_MAX_COVERAGE_INPUT_ASSESSMENTS",
+    "MAX_COVERAGE_INPUT_ASSESSMENTS",
+    "PROPAGATION_COVERAGE_SCHEMA_VERSION",
+    "AssessmentCoverageOutcome",
+    "PropagationCoverageCapacityError",
+    "PropagationCoverageContractError",
+    "PropagationCoverageError",
+    "PropagationCoverageEvidence",
+    "PropagationCoverageInterpretation",
+    "PropagationEndpointObservability",
+    "SamplingCoverageStatus",
     "FAULT_PROPAGATION_EVIDENCE_SCHEMA_VERSION",
     "DependencyPropagationCandidate",
     "FaultPropagationEvidenceContractError",
@@ -123,6 +149,8 @@ __all__ = [
     "build_dependency_propagation_candidates",
     "compare_dependency_graphs",
     "evaluate_pairwise_fault_propagation",
+    "evaluate_propagation_sampling_coverage",
+    "propagation_candidate_observability",
     "project_systemd_dependency_evidence",
     "source_property_for_relation",
     "validate_systemd_unit_identity",

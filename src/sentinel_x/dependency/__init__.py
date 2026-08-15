@@ -76,6 +76,22 @@ from sentinel_x.dependency.propagation import (
     build_dependency_propagation_candidates,
     evaluate_pairwise_fault_propagation,
 )
+from sentinel_x.dependency.propagation_experiment import (
+    CONTROLLED_PROPAGATION_EXPERIMENT_SCHEMA_VERSION,
+    ControlledGroundTruthCoverageEvidence,
+    ControlledPropagationEvidenceClass,
+    ControlledPropagationExperimentCapacityError,
+    ControlledPropagationExperimentContractError,
+    ControlledPropagationExperimentError,
+    ControlledPropagationExperimentPreconditionError,
+    ControlledPropagationExperimentRecord,
+    SystemdPropagationPairArtifact,
+    SystemdPropagationPairSpec,
+    build_controlled_propagation_experiment_record,
+    build_systemd_propagation_pair,
+    evaluate_controlled_ground_truth_coverage,
+    verify_installed_systemd_propagation_pair,
+)
 from sentinel_x.dependency.systemd import (
     SystemdDependencyEvidenceContractError,
     SystemdDependencyEvidenceError,
@@ -84,6 +100,20 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "CONTROLLED_PROPAGATION_EXPERIMENT_SCHEMA_VERSION",
+    "ControlledGroundTruthCoverageEvidence",
+    "ControlledPropagationEvidenceClass",
+    "ControlledPropagationExperimentCapacityError",
+    "ControlledPropagationExperimentContractError",
+    "ControlledPropagationExperimentError",
+    "ControlledPropagationExperimentPreconditionError",
+    "ControlledPropagationExperimentRecord",
+    "SystemdPropagationPairArtifact",
+    "SystemdPropagationPairSpec",
+    "build_controlled_propagation_experiment_record",
+    "build_systemd_propagation_pair",
+    "evaluate_controlled_ground_truth_coverage",
+    "verify_installed_systemd_propagation_pair",
     "DEFAULT_MAX_COVERAGE_INPUT_ASSESSMENTS",
     "MAX_COVERAGE_INPUT_ASSESSMENTS",
     "PROPAGATION_COVERAGE_SCHEMA_VERSION",

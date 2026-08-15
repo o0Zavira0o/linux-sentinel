@@ -19,6 +19,19 @@ from sentinel_x.dependency.discovery import (
     SystemdDependencyUnitSnapshot,
     validate_systemd_unit_identity,
 )
+from sentinel_x.dependency.graph import (
+    DEPENDENCY_GRAPH_SCHEMA_VERSION,
+    DependencyGraphCapacityError,
+    DependencyGraphDelta,
+    DependencyGraphEdge,
+    DependencyGraphError,
+    DependencyGraphNode,
+    DependencyGraphNodeObservation,
+    DependencyGraphNodeObservationChange,
+    DependencyGraphSnapshot,
+    build_dependency_graph,
+    compare_dependency_graphs,
+)
 from sentinel_x.dependency.models import (
     DEPENDENCY_EVIDENCE_SCHEMA_VERSION,
     DependencyConfigurationOrigin,
@@ -40,6 +53,15 @@ from sentinel_x.dependency.systemd import (
 
 __all__ = [
     "DEPENDENCY_EVIDENCE_SCHEMA_VERSION",
+    "DEPENDENCY_GRAPH_SCHEMA_VERSION",
+    "DependencyGraphCapacityError",
+    "DependencyGraphDelta",
+    "DependencyGraphEdge",
+    "DependencyGraphError",
+    "DependencyGraphNode",
+    "DependencyGraphNodeObservation",
+    "DependencyGraphNodeObservationChange",
+    "DependencyGraphSnapshot",
     "SYSTEMD_DEPENDENCY_DISCOVERY_SCHEMA_VERSION",
     "SYSTEMD_DEPENDENCY_OBSERVATION_SOURCE",
     "SYSTEMD_DEPENDENCY_OBSERVATION_TYPE",
@@ -67,6 +89,8 @@ __all__ = [
     "SystemdDependencyProtocolError",
     "SystemdDependencyReadError",
     "SystemdDependencyUnitSnapshot",
+    "build_dependency_graph",
+    "compare_dependency_graphs",
     "project_systemd_dependency_evidence",
     "source_property_for_relation",
     "validate_systemd_unit_identity",

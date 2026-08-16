@@ -14,8 +14,9 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
-- Current milestone: **5F.0 — Freeze & Pre-registration**
-- Last authoritative Fedora quality gate: **1248 / 1248 unit tests**, Ruff formatting/linting PASS, strict mypy PASS
+- Completed Phase-5F milestone: **5F.1 — Evaluation Projection & Blind Case Foundation**
+- Current milestone: **5F.2 — Deterministic Baselines**
+- Last authoritative Fedora quality gate after Phase 5F.1: **1265 / 1265 unit tests**, 145 Python files formatted, strict mypy over 78 source files
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**
 
@@ -50,7 +51,8 @@ The current repository includes:
 - bounded propagation evidence with positive, negative, insufficient, and counterevidence semantics;
 - controlled Requires/Wants propagation experiments;
 - conservative candidate-local and paired evidence synthesis;
-- pre-execution protocol provenance and protocol-bound controlled live execution.
+- pre-execution protocol provenance and protocol-bound controlled live execution;
+- private Phase-5F blinded RAW/MINIMAL/FULL projection with hidden-gold separation.
 
 The Phase-5 dependency/reasoning subsystem remains a **research subsystem** and is not part of the normal `sentinel-x run` decision path.
 

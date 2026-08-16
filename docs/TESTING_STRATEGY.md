@@ -48,7 +48,9 @@ Runs:
 4. strict mypy package checking
 5. unittest discovery under `tests/unit`
 
-Last frozen implementation baseline: 1248/1248 unit tests PASS.
+Frozen Phase-5E.4 FULL-reference baseline: 1248/1248 unit tests PASS.
+
+Phase-5F.1 adds targeted projection/leakage tests. Its completion baseline is 1265 total unit tests with 145 Python files under format/lint scope and 78 source files under strict mypy; this gate must pass before the completion commit is authorized.
 
 ## Mandatory Validation by Change Type
 

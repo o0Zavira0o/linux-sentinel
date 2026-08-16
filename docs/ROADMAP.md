@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.1 — Evaluation Projection & Blind Case Foundation
+- Milestone: 5F.2 — Deterministic Baselines
 
 ## Phase Overview
 
@@ -55,21 +55,28 @@ Frozen before benchmark results:
 
 ### 5F.1 — Evaluation Projection
 
-Status: **ACTIVE — current milestone**.
+Status: **FROZEN**.
 
-Create evaluation-only views of identical cases:
+Implemented a private evaluation-only boundary that:
 
-- RAW
-- MINIMAL
-- FULL
-
-MINIMAL is not a new public framework.
+- projects one gold-free case into RAW, MINIMAL, or FULL without exposing the condition label;
+- uses opaque stable evidence references;
+- restricts MINIMAL to preregistered factual categories;
+- keeps hidden `CaseGold` physically/logically outside visible exports;
+- leaves frozen `dependency/` behavior/public API unchanged.
 
 ### 5F.2 — Baselines
+
+Status: **ACTIVE — current milestone**.
+
+Implement first:
 
 - B0 state/rule
 - B1 simple Graph+Time
 - B1S current deterministic synthesis projection for architecture comparison
+
+Later 5F milestones execute:
+
 - B2 LLM RAW
 - B3 LLM MINIMAL
 - B4 LLM FULL

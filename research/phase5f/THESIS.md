@@ -1,6 +1,6 @@
 # Phase 5F — Pre-Registered Thesis
 
-Status: PRE-REGISTERED DRAFT — must be frozen before scored benchmark result inspection
+Status: FROZEN — preregistered at `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29` before scored results
 
 ## Primary Thesis
 

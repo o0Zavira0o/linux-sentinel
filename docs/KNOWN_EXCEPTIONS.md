@@ -55,3 +55,13 @@ Future research direction, if unlocked: Topology–Evidence Divergence.
 ## EXC-010 — Phase-5E.4 live evidence archive is operator-managed outside source repository
 
 This avoids accidental production-source commits. General trusted public replay remains a future concern only if the surviving architecture needs it.
+
+## EXC-011 — 5F.1 projection enforces shared structure, not semantic lineage equivalence
+
+`CaseSource` ensures RAW/MINIMAL/FULL are emitted from one immutable visible case with shared opaque references and common environment/task scope. It does **not** prove that independently supplied payloads under one reference are semantically equivalent descriptions of the same underlying observation.
+
+This is intentional in 5F.1: domain-specific lineage construction/validation belongs to the blinded corpus/capture work before scored evaluation. Until that gate exists, 5F.1 must be described as a structural blinding/projection foundation rather than a validated empirical case generator.
+
+**Do not infer:** successful 5F.1 unit tests prove benchmark-view equivalence for real captured incidents.
+
+**Removal condition:** empirical/adversarial corpus construction establishes preregistered same-case lineage validation before scored reasoner runs.

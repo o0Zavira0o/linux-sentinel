@@ -1,13 +1,14 @@
 # Current System Architecture
 
-This document describes the architecture that **exists now** in the frozen implementation through Phase 5E.4. Future target architecture belongs in `ROADMAP.md`.
+This document describes the architecture that **exists now**: the frozen Phase-5E.4 FULL reference plus the private Phase-5F evaluation boundary added for falsification. Future target architecture belongs in `ROADMAP.md`.
 
 ## Architecture Overview
 
 Sentinel-X currently contains two partially overlapping worlds:
 
 1. an operational Linux observation/detection runtime used by the CLI;
-2. a Phase-5 dependency/propagation **research subsystem** used by tests and controlled experiment/proof workflows rather than by the normal CLI decision path.
+2. a Phase-5 dependency/propagation **research subsystem** used by tests and controlled experiment/proof workflows rather than by the normal CLI decision path;
+3. a private Phase-5F **evaluation-only projection boundary** that creates blinded RAW/MINIMAL/FULL evidence bundles and keeps hidden gold outside the visible export path.
 
 ```text
 Linux / proc / filesystem / systemd / journald
@@ -50,6 +51,19 @@ Fault Lab + systemd manager evidence
                  |
                  v
  protocol provenance / bound execution
+
+Phase-5F evaluation path:
+visible CaseSource
+        |
+   +----+----+
+   |    |    |
+  RAW MINIMAL FULL
+   |    |    |
+   +----+----+
+        |
+ blinded evidence bundle
+
+hidden CaseGold -> scorer-only future path
 ```
 
 ## Repository Structure
@@ -64,6 +78,7 @@ src/sentinel_x/
   lab/             controlled systemd fault fixtures/injection/datasets
   detection/       service detector, incidents, evaluation/benchmarking
   dependency/      Phase-5 dependency/propagation research subsystem
+  _phase5f/         private falsification/evaluation support; not public API
   cli.py           current CLI/runtime assembly
 ```
 
@@ -179,6 +194,26 @@ Submodules:
 
 This package is intentionally retained intact during Phase 5F so FULL evidence can be ablated against MINIMAL evidence. Its current public/identity complexity is not endorsed as the future target architecture.
 
+### `_phase5f`
+
+**Purpose:** private evaluation-only support for the Phase-5F falsification benchmark.
+
+**Current scope (5F.1):**
+- `visible.py` owns one immutable gold-free `CaseSource` and the RAW/MINIMAL/FULL projection function;
+- `gold.py` owns hidden scorer-only `CaseGold` and is deliberately not re-exported by the package root;
+- `_common.py` contains only shared opaque case/reference validation primitives.
+
+**Key invariants:**
+- all three evidence conditions originate from one `CaseSource`;
+- output shape does not reveal the condition name;
+- evidence references are opaque `REF-####` values rather than semantic/outcome labels;
+- MINIMAL accepts only preregistered factual categories;
+- recursive hidden-gold fields are rejected from visible payloads;
+- FULL consumes serialized frozen evidence without modifying `dependency/`;
+- no new content-addressed identity family, Protocol hierarchy, or public Sentinel-X API is introduced.
+
+`CaseGold` is a hidden benchmark/scoring artifact, not operational diagnosis truth and not a reasoner-visible object.
+
 ## Dependency Direction
 
 Current high-level direction:
@@ -194,6 +229,7 @@ observability / storage / systemd
 
 lab uses systemd evidence for controlled experiments.
 dependency consumes systemd/detection/lab evidence in research paths.
+`_phase5f` consumes evaluation case material and serialized frozen evidence; operational/core/systemd modules do not depend on `_phase5f`.
 ```
 
 Do not introduce a dependency from core/systemd operational primitives back into Phase-5 research synthesis.
@@ -228,6 +264,14 @@ Do not introduce a dependency from core/systemd operational primitives back into
 5. optionally bind controlled intervention evidence;
 6. synthesize candidate-local/paired evidence;
 7. capture exact protocol and backend/boot-bound execution provenance.
+
+### Phase-5F evaluation projection
+
+1. assemble one gold-free `CaseSource` with opaque stable evidence references;
+2. project the same case into RAW, MINIMAL, or FULL using one private function;
+3. serialize only common case/task/environment/evidence fields, never the condition label;
+4. keep `CaseGold` in the hidden scorer-only module and out of visible exports;
+5. defer baselines, reasoner output models, scoring, corpus generation, and LLM integration to later 5F milestones.
 
 ## State Ownership
 

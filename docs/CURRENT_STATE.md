@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **ACTIVE — 5F.1 evaluation projection & blind-case foundation**
+- Status: **ACTIVE — 5F.2 deterministic baselines**
 - Last updated: 2026-08-16
-- Last completed implementation milestone: Phase 5E.4
+- Last completed implementation milestone: Phase 5F.1 — Evaluation Projection & Blind Case Foundation
 - Last verified implementation commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Branch: `sentinel-x-phase1`
 
@@ -61,6 +61,16 @@ post-recovery verified
 
 This is controlled/descriptive evidence, not a universal systemd causal claim.
 
+Phase-5F.1 authoritative Fedora completion gate:
+
+```text
+145 Python files formatted
+strict mypy: 78 source files
+unit tests: 1265 total
+```
+
+This gate is required to pass before the 5F.1 completion commit is authorized.
+
 ## Partially Completed / Research-Only Capabilities
 
 - Phase-5 dependency/propagation subsystem is not wired into normal CLI runtime reasoning.
@@ -70,7 +80,7 @@ This is controlled/descriptive evidence, not a universal systemd causal claim.
 
 ## Not Yet Implemented
 
-- Phase-5F evaluation projections and corpus;
+- Phase-5F blind corpus capture/generation beyond the projection foundation;
 - deterministic comparison baselines for the falsification benchmark;
 - external/blinded LLM evaluation process;
 - reasoner output ClaimDraft runtime model;
@@ -136,9 +146,14 @@ Frozen preregistration set:
 No scored benchmark result is authorized to modify these documents post hoc.
 
 ### 5F.1 — Evaluation Projection & Blind Case Foundation
+Status: **FROZEN**.
+
+Implemented a private `_phase5f` evaluation boundary with one immutable gold-free `CaseSource`, identical-shape RAW/MINIMAL/FULL projection, opaque stable evidence references, preregistered MINIMAL factual categories, recursive hidden-gold leakage rejection, and separate non-exported `CaseGold`. Frozen `dependency/` behavior and public API remain unchanged.
+
+### 5F.2 — Deterministic Baselines
 Status: **CURRENT MILESTONE**.
 
-Build private evaluation-only RAW/MINIMAL/FULL views of identical cases, keep hidden gold physically/logically separate from visible evidence, and establish the first blinded case/export/scoring boundary without modifying frozen Phase-5 behavior.
+Implement the preregistered B0 state/rule baseline, B1 simple Graph+Time heuristic, and B1S projection of current deterministic synthesis against the same evaluation bundle contract. Do not start LLM execution yet.
 
 ## Last Verified Implementation Baseline
 

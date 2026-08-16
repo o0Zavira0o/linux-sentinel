@@ -35,7 +35,9 @@ Never resolve contradictions silently. Report them.
 - Phase 0–4: frozen
 - Phase 5A–5E.4: frozen reference implementation
 - Active phase: **Phase 5F — Falsification**
-- Active milestone: **5F.0 — Freeze & Pre-registration**
+- Phase 5F.0: **FROZEN — preregistration baseline established**
+- Phase 5F.1: **FROZEN — blinded projection boundary established**
+- Active milestone: **5F.2 — Deterministic Baselines**
 
 The previous post-5E.4 feature-growth plan is superseded.
 

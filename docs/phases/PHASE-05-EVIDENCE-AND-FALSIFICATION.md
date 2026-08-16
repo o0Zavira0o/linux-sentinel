@@ -147,13 +147,17 @@ Required:
 
 No scored benchmark result is inspected before freeze. The preregistration documents are now the fixed benchmark contract unless the benchmark itself is invalidated and restarted under a new version.
 
-### 5F.1 — Evaluation Projection
-Status: **CURRENT MILESTONE**.
+Documentation note: the six preregistration files were substantively frozen at `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29`. During 5F.1 their stale `PRE-REGISTERED DRAFT` header was corrected to `FROZEN`; no thesis, baseline, corpus, metric, threshold, or kill criterion content changed.
 
-RAW / MINIMAL / FULL views of identical blinded cases, with hidden gold isolated from all reasoner-visible evidence.
+### 5F.1 — Evaluation Projection
+Status: **FROZEN**.
+
+Private `_phase5f` boundary now produces RAW / MINIMAL / FULL views from one immutable gold-free `CaseSource`, preserves opaque evidence references, restricts MINIMAL to preregistered factual categories, and keeps hidden `CaseGold` out of package-root visible exports. No frozen Phase-5 evidence model or public dependency API changed.
 
 ### 5F.2 — Baselines
-State/rule, Graph+Time, current synthesis projection, LLM RAW/MINIMAL/FULL, optional human subset.
+Status: **CURRENT MILESTONE**.
+
+Implement state/rule B0, simple Graph+Time B1, and current synthesis projection B1S first. LLM RAW/MINIMAL/FULL execution remains a later milestone.
 
 ### 5F.3 — Blind Corpus
 Empirical live cases plus separated adversarial cases covering positive, bounded negative, insufficient, counterevidence, topology/no-effect, temporal distractor, invalid provenance, and multi-candidate ambiguity.

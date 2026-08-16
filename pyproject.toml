@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sentinel-x"
 version = "0.1.0"
-description = "Linux-native research platform for safe autonomous fault detection, diagnosis, and remediation."
+description = "Linux/systemd evidence research framework for falsifiable operational reasoning."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []

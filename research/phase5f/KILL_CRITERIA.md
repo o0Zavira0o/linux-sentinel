@@ -1,6 +1,6 @@
 # Phase 5F — Kill Criteria and Required Verdict
 
-Status: PRE-REGISTERED DRAFT
+Status: FROZEN — preregistered at `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29` before scored results
 
 The project must be allowed to fail.
 

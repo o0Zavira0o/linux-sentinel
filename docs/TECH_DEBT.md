@@ -3,9 +3,9 @@
 Real known problems are tracked here. They should not all be fixed immediately. Priority follows information gain and roadmap gates.
 
 ## TD-001 — Historical README/documentation drift
-**Status:** being corrected by documentation reset.
+**Status:** resolved by the documentation bootstrap at commit `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29`.
 
-README remained at Phase 0 while implementation reached Phase 5E.4, causing new sessions to reconstruct the wrong state.
+README remained at Phase 0 while implementation reached Phase 5E.4, causing new sessions to reconstruct the wrong state. Ongoing prevention is enforced by `AGENTS.md` and the documentation Definition of Done.
 
 ## TD-002 — Phase-5 dependency public surface is too large
 Current dependency research package exports roughly 139 symbols without demonstrated stable external consumers.

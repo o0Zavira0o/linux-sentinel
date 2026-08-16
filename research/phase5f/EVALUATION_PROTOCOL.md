@@ -1,6 +1,6 @@
 # Phase 5F — Evaluation Protocol
 
-Status: PRE-REGISTERED DRAFT — freeze before scored results
+Status: FROZEN — preregistered at `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29` before scored results
 
 ## 1. Objective
 

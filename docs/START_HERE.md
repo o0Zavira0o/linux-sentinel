@@ -20,9 +20,10 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 
 - Current phase: **Phase 5F — Falsification**
 - Phase 5F.0: **FROZEN — preregistration baseline established**
-- Current milestone: **5F.1 — Evaluation Projection & Blind Case Foundation**
+- Phase 5F.1: **FROZEN — blinded projection boundary established**
+- Current milestone: **5F.2 — Deterministic Baselines**
 - Last completed implementation milestone: **Phase 5E.4 — Protocol-Bound Controlled Live Execution**
-- Next milestone after 5F.1: **5F.2 — Deterministic Baselines**
+- Next milestone after 5F.2: **5F.3 — Blind Falsification Corpus**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
 ## What Currently Works
@@ -40,9 +41,10 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - controlled Requires/Wants pair experiments and live runner;
 - conservative evidence synthesis and paired contrast;
 - pre-execution protocol provenance;
-- protocol-bound live execution with boot/backend binding.
+- protocol-bound live execution with boot/backend binding;
+- private Phase-5F RAW/MINIMAL/FULL projection from one gold-free case source, with hidden `CaseGold` kept outside visible exports.
 
-Last authoritative Fedora quality baseline for the frozen implementation:
+Frozen Phase-5E.4 FULL-reference Fedora baseline:
 
 ```text
 140 Python files formatted
@@ -98,13 +100,12 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. freeze Phase-5F preregistration documents under `research/phase5f/`;
-2. build evaluation-only RAW/MINIMAL/FULL projections without modifying frozen Phase-5 implementation;
-3. build blinded falsification corpus and simple deterministic baselines;
-4. execute isolated reasoner comparisons;
-5. score preregistered primary metrics and ablations;
-6. issue one required Phase-5F verdict;
-7. only if the thesis survives, perform Phase 5R deletion-first reduction.
+1. implement preregistered deterministic baselines B0, B1 Graph+Time, and B1S current-synthesis projection on the frozen 5F.1 evidence-bundle boundary;
+2. build the blinded falsification corpus while keeping empirical and adversarial cases distinct;
+3. execute isolated RAW/MINIMAL/FULL reasoner comparisons;
+4. score preregistered primary metrics and ablations;
+5. issue one required Phase-5F verdict;
+6. only if the thesis survives, perform Phase 5R deletion-first reduction.
 
 ## Future-Sensitive Areas
 
@@ -157,6 +158,6 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-16
-- Phase: 5F.1
+- Phase: 5F.2
 - Last verified implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
-- Update reason: documentation bootstrap + Phase-5F preregistration freeze + transition to 5F.1
+- Update reason: Phase-5F.1 blinded projection boundary completed; transition to deterministic baselines

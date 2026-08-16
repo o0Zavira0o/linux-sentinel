@@ -1,6 +1,6 @@
 # Phase 5F — Non-Goals
 
-Status: PRE-REGISTERED DRAFT
+Status: FROZEN — preregistered at `f47b5cb764030ea8c78d53ff76ebe0859bb4ca29` before scored results
 
 Phase 5F is not a product/feature expansion phase.
 

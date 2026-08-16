@@ -76,6 +76,17 @@ from sentinel_x.dependency.propagation import (
     build_dependency_propagation_candidates,
     evaluate_pairwise_fault_propagation,
 )
+from sentinel_x.dependency.protocol import (
+    CONTROLLED_PROPAGATION_PROTOCOL_SCHEMA_VERSION,
+    ControlledPropagationProtocolCapture,
+    ControlledPropagationProtocolComparison,
+    ControlledPropagationProtocolContractError,
+    ControlledPropagationProtocolControlledVariable,
+    ControlledPropagationProtocolError,
+    ControlledPropagationProtocolScope,
+    capture_controlled_propagation_protocol,
+    compare_controlled_propagation_protocols,
+)
 from sentinel_x.dependency.paired_synthesis import (
     CONTROLLED_PROPAGATION_PAIRED_SYNTHESIS_SCHEMA_VERSION,
     ControlledPropagationPairedArm,
@@ -140,6 +151,15 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "CONTROLLED_PROPAGATION_PROTOCOL_SCHEMA_VERSION",
+    "ControlledPropagationProtocolCapture",
+    "ControlledPropagationProtocolComparison",
+    "ControlledPropagationProtocolContractError",
+    "ControlledPropagationProtocolControlledVariable",
+    "ControlledPropagationProtocolError",
+    "ControlledPropagationProtocolScope",
+    "capture_controlled_propagation_protocol",
+    "compare_controlled_propagation_protocols",
     "CONTROLLED_PROPAGATION_PAIRED_SYNTHESIS_SCHEMA_VERSION",
     "ControlledPropagationPairedArm",
     "ControlledPropagationPairedContrastProfile",

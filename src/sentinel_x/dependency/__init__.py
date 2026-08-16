@@ -107,6 +107,22 @@ from sentinel_x.dependency.propagation_experiment import (
     evaluate_controlled_ground_truth_coverage,
     verify_installed_systemd_propagation_pair,
 )
+from sentinel_x.dependency.synthesis import (
+    DEFAULT_MAX_SYNTHESIS_INPUT_EVIDENCE,
+    MAX_SYNTHESIS_INPUT_EVIDENCE,
+    PROPAGATION_EVIDENCE_SYNTHESIS_SCHEMA_VERSION,
+    PropagationEvidenceContext,
+    PropagationEvidenceContribution,
+    PropagationEvidenceModality,
+    PropagationEvidenceSignal,
+    PropagationEvidenceSynthesis,
+    PropagationEvidenceSynthesisCapacityError,
+    PropagationEvidenceSynthesisContractError,
+    PropagationEvidenceSynthesisError,
+    PropagationEvidenceSynthesisInterpretation,
+    PropagationEvidenceSynthesisScope,
+    synthesize_propagation_evidence,
+)
 from sentinel_x.dependency.systemd import (
     SystemdDependencyEvidenceContractError,
     SystemdDependencyEvidenceError,
@@ -115,6 +131,20 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "PROPAGATION_EVIDENCE_SYNTHESIS_SCHEMA_VERSION",
+    "DEFAULT_MAX_SYNTHESIS_INPUT_EVIDENCE",
+    "MAX_SYNTHESIS_INPUT_EVIDENCE",
+    "PropagationEvidenceContext",
+    "PropagationEvidenceContribution",
+    "PropagationEvidenceModality",
+    "PropagationEvidenceSignal",
+    "PropagationEvidenceSynthesis",
+    "PropagationEvidenceSynthesisCapacityError",
+    "PropagationEvidenceSynthesisContractError",
+    "PropagationEvidenceSynthesisError",
+    "PropagationEvidenceSynthesisInterpretation",
+    "PropagationEvidenceSynthesisScope",
+    "synthesize_propagation_evidence",
     "CONTROLLED_PROPAGATION_LIVE_SCHEMA_VERSION",
     "ControlledPropagationLiveCapacityError",
     "ControlledPropagationLiveContractError",

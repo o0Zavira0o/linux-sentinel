@@ -87,6 +87,20 @@ from sentinel_x.dependency.protocol import (
     capture_controlled_propagation_protocol,
     compare_controlled_propagation_protocols,
 )
+from sentinel_x.dependency.protocol_execution import (
+    CONTROLLED_PROPAGATION_BOUND_EXECUTION_SCHEMA_VERSION,
+    ControlledPropagationBoundExecutionAttempt,
+    ControlledPropagationBoundExecutionContractError,
+    ControlledPropagationBoundExecutionError,
+    ControlledPropagationBoundExecutionPreconditionError,
+    ControlledPropagationBoundExecutionRunError,
+    ControlledPropagationExecutionBackendProfile,
+    ControlledPropagationExecutionBackendScope,
+    ControlledPropagationExecutionBindingScope,
+    ControlledPropagationProtocolBoundExecution,
+    ControlledPropagationProtocolBoundRunner,
+    build_controlled_propagation_execution_backend_profile,
+)
 from sentinel_x.dependency.paired_synthesis import (
     CONTROLLED_PROPAGATION_PAIRED_SYNTHESIS_SCHEMA_VERSION,
     ControlledPropagationPairedArm,
@@ -151,6 +165,18 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "CONTROLLED_PROPAGATION_BOUND_EXECUTION_SCHEMA_VERSION",
+    "ControlledPropagationBoundExecutionAttempt",
+    "ControlledPropagationBoundExecutionContractError",
+    "ControlledPropagationBoundExecutionError",
+    "ControlledPropagationBoundExecutionPreconditionError",
+    "ControlledPropagationBoundExecutionRunError",
+    "ControlledPropagationExecutionBackendProfile",
+    "ControlledPropagationExecutionBackendScope",
+    "ControlledPropagationExecutionBindingScope",
+    "ControlledPropagationProtocolBoundExecution",
+    "ControlledPropagationProtocolBoundRunner",
+    "build_controlled_propagation_execution_backend_profile",
     "CONTROLLED_PROPAGATION_PROTOCOL_SCHEMA_VERSION",
     "ControlledPropagationProtocolCapture",
     "ControlledPropagationProtocolComparison",

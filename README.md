@@ -1,254 +1,93 @@
 # Sentinel-X
 
-Sentinel-X is a Linux-native research platform for building safe,
-observable, and eventually autonomous fault detection, diagnosis,
-and remediation systems.
-
-The project is being developed incrementally from the original
-`linux-sentinel` prototype.
-
-Sentinel-X is currently in its engineering-baseline phase. It does
-not yet provide production-ready anomaly detection, root-cause
-analysis, or automated remediation.
-
----
-
-## Project Direction
-
-The long-term control loop is:
-
-```text
-Observe
-   ↓
-Detect
-   ↓
-Diagnose
-   ↓
-Estimate uncertainty
-   ↓
-Apply safety policy
-   ↓
-Remediate
-   ↓
-Verify
-   ↓
-Learn
-```
-
-The design goal is to keep the execution layer separate from the
-intelligence layer.
-
-Native Linux mechanisms such as systemd will eventually perform
-service lifecycle operations. Sentinel-X will provide observation,
-reasoning, safety policy, and verification above those mechanisms.
-
----
-
-## Current Architecture
-
-The current Phase 0 architecture contains:
-
-```text
-CLI
- │
- ▼
-Typed Configuration
- │
- ▼
-SentinelEngine
- │
- ├── Lifecycle State Machine
- │
- └── EventBus
-        │
-        ├── Console Subscriber
-        │
-        └── JSONL Event Recorder
-                 │
-                 ▼
-          Durable Event Store
-```
+Sentinel-X is an **experimental Linux/systemd evidence framework for falsifiable operational reasoning**.
 
-Implemented components include:
+The project does **not** currently claim to be a production-grade RCA engine, autonomous remediation system, superior monitoring stack, or general causal inference engine. Its current research thesis is narrower:
 
-- Python package structure
-- command-line interface
-- environment doctor
-- strict TOML configuration
-- typed immutable events
-- lifecycle state machine
-- in-process EventBus
-- subscriber failure isolation
-- graceful SIGINT/SIGTERM shutdown
-- structured JSONL event persistence
-- run IDs
-- event schema versions
-- private event-file permissions
-- unit tests
-- Ruff linting
-- strict mypy type checking
-- GitHub Actions quality checks
+> **Sentinel-X exists to make operational diagnoses falsifiable.**
 
----
+Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenance and missingness, creates controlled ground truth in a constrained fault lab, and tests whether structured evidence can prevent a human, heuristic, or LLM reasoner from publishing claims stronger than the available evidence supports.
 
-## Requirements
+## Current Position
 
-Sentinel-X currently requires:
+- Development branch: `sentinel-x-phase1`
+- Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
+- Completed implementation: Phase 0 through **Phase 5E.4**
+- Active phase: **Phase 5F — Falsification**
+- Current milestone: **5F.0 — Freeze & Pre-registration**
+- Last authoritative Fedora quality gate: **1248 / 1248 unit tests**, Ruff formatting/linting PASS, strict mypy PASS
+- Phase 5E.4 controlled live proof: PASS
+- Status: research/experimental; **not production-grade**
 
-```text
-Linux
-Python >= 3.11
-```
+Phase 5F intentionally pauses feature growth. The next objective is to determine whether Sentinel-X structured evidence materially improves operational reasoning over simpler alternatives.
 
-Fedora Linux is the primary development environment.
+## Start Here
 
----
+If you are a new engineer or a new AI session, do **not** infer the project from the source tree or this README alone.
 
-## Development Setup
+Read in this order:
 
-Clone the repository and enter it:
+1. [`AGENTS.md`](AGENTS.md)
+2. [`docs/START_HERE.md`](docs/START_HERE.md)
+3. the documents referenced by `START_HERE.md`
 
-```bash
-git clone <repository-url>
-cd linux-sentinel
-```
+`docs/START_HERE.md` is the canonical bootstrap document for continuing the project in a new conversation.
 
-Create a virtual environment:
+## What Is Implemented
 
-```bash
-python3 -m venv .venv
-```
+The current repository includes:
 
-Activate it:
+- typed configuration, event, runtime, scheduling, EventBus, and JSONL evidence persistence;
+- Linux host observation for CPU/load, memory, filesystem, disk I/O, network, and process state;
+- bounded systemd service-state observation;
+- bounded journald observation with cursor/checkpoint continuity;
+- systemd/journal correlation with explicit evidence quality;
+- conservative systemd service detection with `HEALTHY`, `INACTIVE`, `FAILED`, and `UNASSESSED`;
+- stateful incident lifecycle and live EventBus integration;
+- a controlled `sentinel-x-lab-*` systemd Fault Lab with recovery verification and ground truth;
+- controlled detection benchmarking and evidence characterization;
+- systemd dependency evidence/discovery/graph/versioning;
+- bounded propagation evidence with positive, negative, insufficient, and counterevidence semantics;
+- controlled Requires/Wants propagation experiments;
+- conservative candidate-local and paired evidence synthesis;
+- pre-execution protocol provenance and protocol-bound controlled live execution.
 
-```bash
-source .venv/bin/activate
-```
+The Phase-5 dependency/reasoning subsystem remains a **research subsystem** and is not part of the normal `sentinel-x run` decision path.
 
-Install Sentinel-X together with development tools:
+## What Is Not Proven
 
-```bash
-python -m pip install --upgrade pip setuptools
-python -m pip install -e ".[dev]"
-```
+The repository does **not** currently prove:
 
----
+- superiority over simple state/graph/time heuristics;
+- improvement over a strong LLM given raw operational evidence;
+- production false-positive/false-negative rates;
+- cross-distro or cross-systemd generalization;
+- production scalability or long-running stability;
+- statistically calibrated probabilities or confidence scores;
+- general causal validity or universal fault-propagation laws;
+- autonomous remediation safety.
 
-## Environment Check
+These are intentionally visible unknowns rather than hidden claims.
 
-Run:
+## Phase 5F — Falsification
 
-```bash
-sentinel-x doctor
-```
+Phase 5F compares the same blinded cases using:
 
-A valid Fedora/Linux development environment should report that the
-Linux platform and Python requirements pass.
+- B0: state/rule baseline;
+- B1: simple graph + time heuristic;
+- B2: fresh LLM with RAW evidence;
+- B3: same LLM/task with MINIMAL Sentinel-X evidence;
+- B4: same LLM/task with FULL current Phase-5 evidence.
 
----
+Primary evaluation includes correctness, propagation Macro-F1, unsupported causal claim rate, correct abstention, evidence citation precision, provenance violations, counterevidence preservation, and run-to-run consistency.
 
-## Configuration
+Full Phase-5 complexity survives only if it provides repeatable value over MINIMAL evidence. If it does not, the architecture is expected to shrink.
 
-Sentinel-X uses TOML configuration.
-
-The tracked example is:
-
-```text
-sentinel.example.toml
-```
-
-Create a local configuration:
-
-```bash
-cp sentinel.example.toml sentinel.toml
-```
-
-The local `sentinel.toml` file is intentionally ignored by Git.
-
-Current example:
-
-```toml
-[agent]
-instance_name = "sentinel-x"
-tick_interval = 0.5
-
-[storage]
-enabled = true
-directory = "~/.local/state/sentinel-x/events"
-flush_on_write = true
-```
-
-Validate configuration without starting the agent:
-
-```bash
-sentinel-x config-check
-```
-
-Validate a specific file:
-
-```bash
-sentinel-x config-check --config /path/to/config.toml
-```
-
----
-
-## Running Sentinel-X
-
-Start the current core runtime:
-
-```bash
-sentinel-x run
-```
-
-Stop it gracefully with:
-
-```text
-Ctrl+C
-```
-
-Sentinel-X converts SIGINT and SIGTERM into graceful shutdown
-requests.
-
----
-
-## Event Storage
-
-When event persistence is enabled, every runtime execution receives
-a unique `run_id`.
-
-Each run writes to a separate JSON Lines file.
-
-The default location is:
-
-```text
-~/.local/state/sentinel-x/events
-```
-
-Each persisted record contains information such as:
-
-```text
-schema_version
-run_id
-instance_name
-recorded_at
-event_id
-occurred_at
-event kind
-severity
-source
-message
-attributes
-```
-
-The event store is intended to become the evidence layer for future
-fault-injection experiments, anomaly detection, temporal analysis,
-root-cause analysis, and remediation evaluation.
-
----
+See [`research/phase5f/THESIS.md`](research/phase5f/THESIS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Engineering Quality Gate
 
-Before committing Sentinel-X changes, run:
+Before a code change is frozen:
 
 ```bash
 ./scripts/check.sh
@@ -256,166 +95,83 @@ Before committing Sentinel-X changes, run:
 
 The current gate performs:
 
+1. Python syntax validation
+2. Ruff formatting check
+3. Ruff linting
+4. strict mypy checking
+5. unit tests
+
+Linux-native behavior also requires an appropriate Fedora live/smoke proof when the change affects real system behavior. Green unit tests are a merge prerequisite, **not proof of product or research value**.
+
+## Development Setup
+
+Requirements:
+
 ```text
-Python syntax validation
-        ↓
-Ruff linting
-        ↓
-strict mypy checking
-        ↓
-unit tests
+Linux
+Python >= 3.11
 ```
 
-Any failed stage stops the gate immediately.
-
-GitHub Actions executes the same gate on supported Python versions.
-
----
-
-## Unit Tests
-
-Tests can also be run directly:
+Typical setup:
 
 ```bash
-python -m unittest discover -s tests/unit -v
+git clone https://github.com/o0Zavira0o/linux-sentinel.git
+cd linux-sentinel
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools
+python -m pip install -e ".[dev]"
 ```
 
----
-
-## Type Checking
-
-Run:
+Validate the environment:
 
 ```bash
-python -m mypy --package sentinel_x
+sentinel-x doctor
 ```
 
-The local `src` directory is configured as the Sentinel-X mypy
-source root through `pyproject.toml`.
-
-Sentinel-X core code is checked using strict mypy settings.
-
----
-
-## Linting
-
-Run:
+Validate configuration:
 
 ```bash
-ruff check src/sentinel_x tests
+sentinel-x config-check --config sentinel.example.toml
 ```
 
-Automatic formatting is configured but is not yet part of the
-quality gate. Formatting enforcement will be enabled after the
-existing Phase 0 source files have been normalized in a controlled
-migration.
+Run the current operational runtime:
 
----
-
-## Legacy Baseline
-
-The original linux-sentinel implementation is intentionally retained
-during Phase 0.
-
-Legacy files currently include:
-
-```text
-main.py
-dummy_service.py
-requirements.txt
-
-src/monitor.py
-src/watchdog.py
-src/logger.py
+```bash
+sentinel-x run
 ```
 
-They are preserved as an engineering and experimental baseline.
+## Core Research Principles
 
-New Sentinel-X development lives under:
+- Linux/systemd provide execution and observable state; Sentinel-X is an evidence/intelligence layer.
+- Preserve native evidence before interpretation.
+- Prefer duplicate evidence to silent loss when at-least-once semantics apply.
+- Unknown state stays explicit.
+- Missing evidence is not zero/healthy/no-effect.
+- Topology is not runtime effect.
+- Temporal order is not causation.
+- A single intervention is not a universal causal law.
+- No invented confidence or probability.
+- Bounded structures fail explicitly rather than silently discarding important evidence.
+- Claims must not exceed evidence.
 
-```text
-src/sentinel_x/
-```
+## Documentation
 
----
+The documentation system is part of the engineering process:
 
-## Research Roadmap
+- `docs/PROJECT_SPEC.md` — what the project is meant to become
+- `docs/ARCHITECTURE.md` — what architecture exists now
+- `docs/CURRENT_STATE.md` — what is implemented right now
+- `docs/ROADMAP.md` — where the project goes next
+- `docs/CONSTRAINTS_AND_INVARIANTS.md` — what must not accidentally change
+- `docs/KNOWN_EXCEPTIONS.md` — odd-looking but intentional/current behavior
+- `docs/TECH_DEBT.md` — real debt that should not necessarily be fixed now
+- `docs/TESTING_STRATEGY.md` — what each validation layer proves
+- `docs/phases/` — phase-specific intent/history/status
+- `docs/adr/` — architectural decisions and why they were made
 
-```text
-Phase 0
-Engineering baseline
+Every meaningful push must evaluate whether these documents need an update. See `AGENTS.md`.
 
-Phase 1
-Linux host observability
+## Repository Status
 
-Phase 2
-systemd and journald observability
-
-Phase 3
-Fault-injection laboratory
-
-Phase 4
-Fault and anomaly detection
-
-Phase 5
-Dependency and causal graph construction
-
-Phase 6
-Root-cause analysis
-
-Phase 7
-Safety-constrained remediation
-
-Phase 8
-Post-remediation verification
-
-Phase 9+
-Adaptive telemetry, uncertainty estimation,
-causal learning, and constrained agentic reasoning
-```
-
----
-
-## Safety Principle
-
-Sentinel-X will not treat arbitrary shell execution as an
-intelligence interface.
-
-Future remediation will use explicit, validated, constrained actions
-through native Linux mechanisms.
-
-The intended architecture is:
-
-```text
-Reasoning
-   ↓
-Safety Policy
-   ↓
-Approved Action
-   ↓
-Controlled Executor
-   ↓
-Native Linux Mechanism
-```
-
-not:
-
-```text
-AI
- ↓
-arbitrary shell
-```
-
----
-
-## Project Status
-
-Current status:
-
-```text
-Phase 0.5A
-Engineering Quality Gates
-```
-
-Sentinel-X is still a research and development system and should not
-yet be used as an autonomous production remediation agent.
+Sentinel-X remains an **experimental framework**. The current goal is not to add more features. The current goal is to give the project a fair opportunity to falsify its own evidence thesis before further architecture is built.

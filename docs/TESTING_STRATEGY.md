@@ -1,0 +1,128 @@
+# Testing Strategy
+
+## Testing Philosophy
+
+Sentinel-X uses tests to protect correctness contracts, but **test count is not evidence of product/research value**.
+
+A green suite is a necessary merge/freeze condition. Empirical/live/comparative evidence is required for claims about real Linux behavior or reasoning value.
+
+Every new test must answer:
+
+> What new failure class does this test protect?
+
+If the answer is “the same primitive invalid-type/bounds rule in another DTO,” the test should normally be rejected or moved to a shared primitive matrix.
+
+## Test Layers
+
+### Tier A — Primitive Unit Tests
+Parser/validator/identity primitives.
+
+### Tier B — Domain Behavior
+State machines and epistemic rules: scheduler, incidents, journal continuity, coverage, future Claim Gate.
+
+### Tier C — Component Integration
+Multiple components composed in-process without real OS mutation.
+
+### Tier D — Real Linux Integration
+systemctl/journal/filesystem behavior on Fedora/Linux.
+
+### Tier E — Live Controlled Experiment
+Real mutation + observation + recovery.
+
+### Tier F — Comparative Evaluation
+Graph+Time vs synthesis; LLM RAW vs MINIMAL vs FULL; ablations; later operator subset.
+
+**From Phase 5F onward, Tier F is more important than increasing Tier-A validation count.**
+
+## Current Quality Gate
+
+```bash
+./scripts/check.sh
+```
+
+Runs:
+
+1. compileall syntax validation
+2. `ruff format --check`
+3. `ruff check`
+4. strict mypy package checking
+5. unittest discovery under `tests/unit`
+
+Last frozen implementation baseline: 1248/1248 unit tests PASS.
+
+## Mandatory Validation by Change Type
+
+### Documentation-only
+- verify expected documentation files only;
+- check UTF-8/readability/internal links;
+- no source changes;
+- run `./scripts/check.sh` before freeze to prove implementation baseline unchanged;
+- exact stage guard + push + CI.
+
+### Deterministic source logic
+- narrow compile/Ruff/mypy;
+- dedicated tests;
+- relevant regression set;
+- full gate.
+
+### Linux reader/parser
+Above + real Fedora smoke/integration proof when behavior changed.
+
+### systemd/journal mutation/lifecycle
+Above + controlled live proof with explicit mutation/cleanup/recovery.
+
+### Phase-5F evaluation code
+- tests for leakage, projection equivalence/scope, scoring, baseline semantics;
+- no new public API unless separately approved;
+- verify hidden labels never enter visible projection;
+- preregistration remains frozen after scored-result inspection except versioned invalidation/result reporting.
+
+## Regression Policy
+
+Retain real regressions such as:
+
+- systemctl string-array parser correction;
+- correlation/detection recursion/backpressure interaction;
+- fresh-unit load/prepare ordering;
+- boot-binding TOCTOU before mutation;
+- PID reuse handling;
+- journal checkpoint/recovery continuity.
+
+Do not delete regressions merely to reduce test count.
+
+## Mocking/Fake Rules
+
+- fakes are acceptable for deterministic unit tests;
+- mocks/fakes do not substitute for Linux live proof;
+- use injected callables/concrete collaborators before new Protocols solely for tests;
+- never claim Linux behavior is validated only because mocks passed.
+
+## Test Data Strategy
+
+- deterministic fixtures for unit/domain behavior;
+- Sentinel-owned lab fixtures for controlled ground truth;
+- empirical and adversarial Phase-5F cases separated;
+- hidden labels stored separately from visible evidence;
+- derived adversarial variants are not independent live experiments.
+
+## Known Testing Gaps
+
+- no broad real reboot campaign;
+- no cross-distro/systemd campaign;
+- no long-running soak/high-rate benchmark;
+- no complete hard-crash campaign;
+- no production population accuracy estimate;
+- no blinded LLM baseline yet;
+- no simple Graph+Time comparison yet;
+- no operator-value study.
+
+## Definition of Tested
+
+Use the strongest justified qualifier only:
+
+- unit-tested;
+- integration-tested;
+- Fedora live-tested;
+- controlled-experiment validated;
+- comparatively evaluated;
+- externally generalized.

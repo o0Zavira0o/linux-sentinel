@@ -76,6 +76,15 @@ from sentinel_x.dependency.propagation import (
     build_dependency_propagation_candidates,
     evaluate_pairwise_fault_propagation,
 )
+from sentinel_x.dependency.paired_synthesis import (
+    CONTROLLED_PROPAGATION_PAIRED_SYNTHESIS_SCHEMA_VERSION,
+    ControlledPropagationPairedArm,
+    ControlledPropagationPairedContrastProfile,
+    ControlledPropagationPairedSynthesis,
+    ControlledPropagationPairedSynthesisContractError,
+    ControlledPropagationPairedSynthesisError,
+    build_controlled_propagation_paired_synthesis,
+)
 from sentinel_x.dependency.propagation_live import (
     CONTROLLED_PROPAGATION_LIVE_SCHEMA_VERSION,
     ControlledPropagationLiveCapacityError,
@@ -131,6 +140,13 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "CONTROLLED_PROPAGATION_PAIRED_SYNTHESIS_SCHEMA_VERSION",
+    "ControlledPropagationPairedArm",
+    "ControlledPropagationPairedContrastProfile",
+    "ControlledPropagationPairedSynthesis",
+    "ControlledPropagationPairedSynthesisContractError",
+    "ControlledPropagationPairedSynthesisError",
+    "build_controlled_propagation_paired_synthesis",
     "PROPAGATION_EVIDENCE_SYNTHESIS_SCHEMA_VERSION",
     "DEFAULT_MAX_SYNTHESIS_INPUT_EVIDENCE",
     "MAX_SYNTHESIS_INPUT_EVIDENCE",

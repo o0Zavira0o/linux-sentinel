@@ -155,12 +155,14 @@ Status: **FROZEN**.
 Private `_phase5f` boundary now produces RAW / MINIMAL / FULL views from one immutable gold-free `CaseSource`, preserves opaque evidence references, restricts MINIMAL to preregistered factual categories, and keeps hidden `CaseGold` out of package-root visible exports. No frozen Phase-5 evidence model or public dependency API changed.
 
 ### 5F.2 — Baselines
-Status: **CURRENT MILESTONE**.
+Status: **FROZEN**.
 
-Implement state/rule B0, simple Graph+Time B1, and current synthesis projection B1S first. LLM RAW/MINIMAL/FULL execution remains a later milestone.
+Implemented function-only private comparators without changing frozen `dependency/`: B0 maps dependent service state while intentionally ignoring topology/timing/provenance/coverage; B1 uses MINIMAL factual scope, requirement reachability, monotonic source/target transitions, boot compatibility, ambiguity, and bounded healthy coverage; B1S validates current synthesis schema/count/interpretation claim boundaries and maps it conservatively to common benchmark labels. Forward temporal consistency alone remains `INSUFFICIENT`, not an observed effect. No scored comparison or value claim is assigned by 5F.2.
 
 ### 5F.3 — Blind Corpus
-Empirical live cases plus separated adversarial cases covering positive, bounded negative, insufficient, counterevidence, topology/no-effect, temporal distractor, invalid provenance, and multi-candidate ambiguity.
+Status: **CURRENT MILESTONE**.
+
+Build empirical live cases plus separated adversarial cases covering positive, bounded negative, insufficient, counterevidence, topology/no-effect, temporal distractor, invalid provenance, and multi-candidate ambiguity. Same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic adversarial transformation provenance must be frozen before scored outputs.
 
 ### 5F.4–5F.6
 Structured final outputs, preregistered scoring, Full-vs-Minimal and field ablations.

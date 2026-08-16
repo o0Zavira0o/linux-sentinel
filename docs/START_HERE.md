@@ -21,9 +21,10 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Current phase: **Phase 5F — Falsification**
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
-- Current milestone: **5F.2 — Deterministic Baselines**
-- Last completed implementation milestone: **Phase 5E.4 — Protocol-Bound Controlled Live Execution**
-- Next milestone after 5F.2: **5F.3 — Blind Falsification Corpus**
+- Phase 5F.2: **FROZEN — deterministic baselines established**
+- Current milestone: **5F.3 — Blind Falsification Corpus**
+- Last completed implementation milestone: **Phase 5F.2 — Deterministic Baselines**
+- Next milestone after 5F.3: **5F.4 — Structured Reasoner Output**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
 ## What Currently Works
@@ -42,7 +43,8 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - conservative evidence synthesis and paired contrast;
 - pre-execution protocol provenance;
 - protocol-bound live execution with boot/backend binding;
-- private Phase-5F RAW/MINIMAL/FULL projection from one gold-free case source, with hidden `CaseGold` kept outside visible exports.
+- private Phase-5F RAW/MINIMAL/FULL projection from one gold-free case source, with hidden `CaseGold` kept outside visible exports;
+- private deterministic B0/B1/B1S comparators ready for later scoring, with no benchmark value conclusion assigned yet.
 
 Frozen Phase-5E.4 FULL-reference Fedora baseline:
 
@@ -93,16 +95,16 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 ## Current High-Priority Problems
 
 1. external value of structured evidence is unproven;
-2. no simple Graph+Time or blinded LLM baseline has yet been scored;
+2. deterministic B0/B1/B1S comparators exist but have not yet been scored; no blinded LLM baseline has been executed;
 3. FULL Phase-5 complexity has not been ablated against MINIMAL evidence;
 4. documentation was historically stale and is now being made an engineering artifact;
 5. Phase-5 dependency public surface and identity/validation machinery are reduction candidates, but must not be preemptively refactored.
 
 ## Immediate Next Work
 
-1. implement preregistered deterministic baselines B0, B1 Graph+Time, and B1S current-synthesis projection on the frozen 5F.1 evidence-bundle boundary;
-2. build the blinded falsification corpus while keeping empirical and adversarial cases distinct;
-3. execute isolated RAW/MINIMAL/FULL reasoner comparisons;
+1. build the blinded falsification corpus while keeping empirical live cases and adversarial derived cases distinct;
+2. enforce same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic transformation provenance before scoring;
+3. execute isolated RAW/MINIMAL/FULL reasoner comparisons only after the corpus is frozen;
 4. score preregistered primary metrics and ablations;
 5. issue one required Phase-5F verdict;
 6. only if the thesis survives, perform Phase 5R deletion-first reduction.
@@ -158,6 +160,7 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-16
-- Phase: 5F.2
-- Last verified implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
-- Update reason: Phase-5F.1 blinded projection boundary completed; transition to deterministic baselines
+- Phase: 5F.3
+- Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
+- Last completed repository checkpoint before 5F.2: `5d98262c8fb1d03d8e6aa5b9e2da1509723eaea6`
+- Update reason: Phase-5F.2 deterministic comparators completed; transition to blind corpus construction

@@ -37,7 +37,8 @@ Never resolve contradictions silently. Report them.
 - Active phase: **Phase 5F — Falsification**
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
-- Active milestone: **5F.2 — Deterministic Baselines**
+- Phase 5F.2: **FROZEN — deterministic baselines established**
+- Active milestone: **5F.3 — Blind Falsification Corpus**
 
 The previous post-5E.4 feature-growth plan is superseded.
 

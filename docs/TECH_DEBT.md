@@ -50,8 +50,10 @@ Missing CPU/RSS/FD/event throughput/duplicate/loss/storage/backlog measurements.
 ## TD-012 — Lab privilege model is broad
 Some proof processes execute under operator-authorized sudo instead of a narrow immutable helper.
 
-## TD-013 — No simple Graph+Time baseline
-Current Phase-5 synthesis has not been fairly compared to a small heuristic on the same hard cases.
+## TD-013 — Graph+Time comparison not yet scored
+**Status:** implementation portion resolved in Phase 5F.2; evaluation remains open.
+
+A small B1 Graph+Time comparator now exists alongside B0 and B1S, but none has yet been scored on the frozen HARD corpus. Current Phase-5 synthesis remains unvalidated against the smaller heuristic until 5F corpus/scoring milestones run.
 
 ## TD-014 — No blinded RAW-vs-structured LLM baseline
 The core evidence thesis has no comparative LLM evaluation yet.

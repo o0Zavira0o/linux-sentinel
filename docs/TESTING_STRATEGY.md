@@ -50,7 +50,9 @@ Runs:
 
 Frozen Phase-5E.4 FULL-reference baseline: 1248/1248 unit tests PASS.
 
-Phase-5F.1 adds targeted projection/leakage tests. Its completion baseline is 1265 total unit tests with 145 Python files under format/lint scope and 78 source files under strict mypy; this gate must pass before the completion commit is authorized.
+Phase-5F.1 adds targeted projection/leakage tests. Its completion baseline is 1265 total unit tests with 145 Python files under format/lint scope and 78 source files under strict mypy.
+
+Phase-5F.2 adds deterministic baseline semantics without Linux mutation: B0 intentionally ignores topology/provenance/coverage; B1 exercises boot-scoped requirement reachability, forward/reverse timing, ambiguity, distractors, and bounded healthy coverage; B1S validates and conservatively projects frozen synthesis serialization. Its completion baseline is 1285 total unit tests with 147 Python files under format/lint scope and 79 source files under strict mypy.
 
 ## Mandatory Validation by Change Type
 
@@ -115,7 +117,7 @@ Do not delete regressions merely to reduce test count.
 - no complete hard-crash campaign;
 - no production population accuracy estimate;
 - no blinded LLM baseline yet;
-- no simple Graph+Time comparison yet;
+- B0/B1/B1S are implemented but have not yet been scored on the frozen corpus;
 - no operator-value study.
 
 ## Definition of Tested

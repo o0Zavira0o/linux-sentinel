@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.2 — Deterministic Baselines
+- Milestone: 5F.3 — Blind Falsification Corpus
 
 ## Phase Overview
 
@@ -67,13 +67,15 @@ Implemented a private evaluation-only boundary that:
 
 ### 5F.2 — Baselines
 
-Status: **ACTIVE — current milestone**.
+Status: **FROZEN**.
 
-Implement first:
+Implemented:
 
-- B0 state/rule
-- B1 simple Graph+Time
-- B1S current deterministic synthesis projection for architecture comparison
+- B0 state/rule comparator;
+- B1 simple requirement-graph + time-window comparator over MINIMAL factual evidence;
+- B1S conservative projection of current frozen deterministic synthesis.
+
+These implementations have not yet been scored; 5F.2 establishes comparators, not benchmark conclusions.
 
 Later 5F milestones execute:
 
@@ -83,6 +85,8 @@ Later 5F milestones execute:
 - optional human subset
 
 ### 5F.3 — Blind Falsification Corpus
+
+Status: **ACTIVE — current milestone**.
 
 Must include multiple cases of:
 

@@ -14,9 +14,9 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
-- Completed Phase-5F milestone: **5F.1 — Evaluation Projection & Blind Case Foundation**
-- Current milestone: **5F.2 — Deterministic Baselines**
-- Last authoritative Fedora quality gate after Phase 5F.1: **1265 / 1265 unit tests**, 145 Python files formatted, strict mypy over 78 source files
+- Completed Phase-5F milestone: **5F.2 — Deterministic Baselines**
+- Current milestone: **5F.3 — Blind Falsification Corpus**
+- Last authoritative Fedora quality gate after Phase 5F.2: **1285 / 1285 unit tests**, 147 Python files formatted, strict mypy over 79 source files
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**
 
@@ -52,7 +52,8 @@ The current repository includes:
 - controlled Requires/Wants propagation experiments;
 - conservative candidate-local and paired evidence synthesis;
 - pre-execution protocol provenance and protocol-bound controlled live execution;
-- private Phase-5F blinded RAW/MINIMAL/FULL projection with hidden-gold separation.
+- private Phase-5F blinded RAW/MINIMAL/FULL projection with hidden-gold separation;
+- private deterministic Phase-5F comparators: B0 state rule, B1 Graph+Time, and B1S frozen-synthesis projection.
 
 The Phase-5 dependency/reasoning subsystem remains a **research subsystem** and is not part of the normal `sentinel-x run` decision path.
 

@@ -198,10 +198,11 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 
 **Purpose:** private evaluation-only support for the Phase-5F falsification benchmark.
 
-**Current scope (5F.1):**
+**Current scope (through 5F.2):**
 - `visible.py` owns one immutable gold-free `CaseSource` and the RAW/MINIMAL/FULL projection function;
 - `gold.py` owns hidden scorer-only `CaseGold` and is deliberately not re-exported by the package root;
-- `_common.py` contains only shared opaque case/reference validation primitives.
+- `_common.py` contains only shared opaque case/reference validation primitives;
+- `baselines.py` owns three function-only deterministic comparators: B0 state rule, B1 Graph+Time, and B1S projection of the existing frozen synthesis serialization.
 
 **Key invariants:**
 - all three evidence conditions originate from one `CaseSource`;
@@ -210,7 +211,10 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 - MINIMAL accepts only preregistered factual categories;
 - recursive hidden-gold fields are rejected from visible payloads;
 - FULL consumes serialized frozen evidence without modifying `dependency/`;
-- no new content-addressed identity family, Protocol hierarchy, or public Sentinel-X API is introduced.
+- no new content-addressed identity family, Protocol hierarchy, result class, or public Sentinel-X API is introduced;
+- B0 intentionally ignores topology, timing, boot provenance, and coverage so it remains a genuinely small comparator;
+- B1 uses only MINIMAL factual scope/topology/timeline/coverage/boot facts and supports requirement-edge reachability without consuming current synthesis;
+- B1S consumes only FULL current-synthesis serialization and does not upgrade forward temporal consistency alone into an observed effect.
 
 `CaseGold` is a hidden benchmark/scoring artifact, not operational diagnosis truth and not a reasoner-visible object.
 

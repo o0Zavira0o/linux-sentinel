@@ -3,9 +3,9 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **ACTIVE — 5F.2 deterministic baselines**
+- Status: **ACTIVE — 5F.3 blind falsification corpus**
 - Last updated: 2026-08-16
-- Last completed implementation milestone: Phase 5F.1 — Evaluation Projection & Blind Case Foundation
+- Last completed implementation milestone: Phase 5F.2 — Deterministic Baselines
 - Last verified implementation commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Branch: `sentinel-x-phase1`
 
@@ -69,7 +69,15 @@ strict mypy: 78 source files
 unit tests: 1265 total
 ```
 
-This gate is required to pass before the 5F.1 completion commit is authorized.
+Phase-5F.2 authoritative Fedora completion gate:
+
+```text
+147 Python files formatted
+strict mypy: 79 source files
+unit tests: 1285 total
+```
+
+The 5F.2 gate validates implementation integrity only; the deterministic baselines have not yet been scored on the frozen falsification corpus.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -80,8 +88,8 @@ This gate is required to pass before the 5F.1 completion commit is authorized.
 
 ## Not Yet Implemented
 
-- Phase-5F blind corpus capture/generation beyond the projection foundation;
-- deterministic comparison baselines for the falsification benchmark;
+- Phase-5F blind empirical/adversarial corpus capture and lineage validation;
+- scored comparison of B0/B1/B1S on the frozen corpus;
 - external/blinded LLM evaluation process;
 - reasoner output ClaimDraft runtime model;
 - Claim Gate;
@@ -151,15 +159,20 @@ Status: **FROZEN**.
 Implemented a private `_phase5f` evaluation boundary with one immutable gold-free `CaseSource`, identical-shape RAW/MINIMAL/FULL projection, opaque stable evidence references, preregistered MINIMAL factual categories, recursive hidden-gold leakage rejection, and separate non-exported `CaseGold`. Frozen `dependency/` behavior and public API remain unchanged.
 
 ### 5F.2 — Deterministic Baselines
+Status: **FROZEN**.
+
+Implemented three private function-only comparators on the 5F.1 boundary: B0 intentionally naive state/rule logic; B1 requirement-graph + monotonic-time + boot + bounded-coverage reasoning over MINIMAL factual evidence; and B1S conservative mapping of the existing frozen synthesis serialization. No benchmark score or value claim is assigned by this milestone.
+
+### 5F.3 — Blind Falsification Corpus
 Status: **CURRENT MILESTONE**.
 
-Implement the preregistered B0 state/rule baseline, B1 simple Graph+Time heuristic, and B1S projection of current deterministic synthesis against the same evaluation bundle contract. Do not start LLM execution yet.
+Build the preregistered empirical and adversarial case corpus, preserve source-run grouping, enforce RAW/MINIMAL/FULL lineage for each opaque case, and freeze transformation/capture rules before scored reasoner output is inspected.
 
-## Last Verified Implementation Baseline
+## Frozen FULL Reference and Repository Checkpoints
 
-- Commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
+- FULL Phase-5E.4 reference commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
+- Last completed repository checkpoint before 5F.2: `5d98262c8fb1d03d8e6aa5b9e2da1509723eaea6`
 - Branch: `sentinel-x-phase1`
 - Date: 2026-08-16
-- CI: four jobs green
 
-Documentation-only commits may follow this baseline without changing the implementation baseline recorded above.
+The current repository HEAD must be read from Git. The FULL reference commit remains fixed for ablation even as private Phase-5F evaluation infrastructure advances.

@@ -76,6 +76,21 @@ from sentinel_x.dependency.propagation import (
     build_dependency_propagation_candidates,
     evaluate_pairwise_fault_propagation,
 )
+from sentinel_x.dependency.propagation_live import (
+    CONTROLLED_PROPAGATION_LIVE_SCHEMA_VERSION,
+    ControlledPropagationLiveCapacityError,
+    ControlledPropagationLiveContractError,
+    ControlledPropagationLiveError,
+    ControlledPropagationLivePolicy,
+    ControlledPropagationLivePreconditionError,
+    ControlledPropagationLiveRecoveryError,
+    ControlledPropagationLiveRun,
+    ControlledPropagationLiveRunner,
+    ControlledPropagationLiveSamplingError,
+    SystemdDependentAssessmentSampler,
+    SystemdPropagationPairLifecycle,
+    discover_live_pair_candidate,
+)
 from sentinel_x.dependency.propagation_experiment import (
     CONTROLLED_PROPAGATION_EXPERIMENT_SCHEMA_VERSION,
     ControlledGroundTruthCoverageEvidence,
@@ -100,6 +115,19 @@ from sentinel_x.dependency.systemd import (
 )
 
 __all__ = [
+    "CONTROLLED_PROPAGATION_LIVE_SCHEMA_VERSION",
+    "ControlledPropagationLiveCapacityError",
+    "ControlledPropagationLiveContractError",
+    "ControlledPropagationLiveError",
+    "ControlledPropagationLivePolicy",
+    "ControlledPropagationLivePreconditionError",
+    "ControlledPropagationLiveRecoveryError",
+    "ControlledPropagationLiveRun",
+    "ControlledPropagationLiveRunner",
+    "ControlledPropagationLiveSamplingError",
+    "SystemdDependentAssessmentSampler",
+    "SystemdPropagationPairLifecycle",
+    "discover_live_pair_candidate",
     "CONTROLLED_PROPAGATION_EXPERIMENT_SCHEMA_VERSION",
     "ControlledGroundTruthCoverageEvidence",
     "ControlledPropagationEvidenceClass",

@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.3A corrective checkpoint finalization — Fedora validation passed; finalize commit/push/remote-equality/clean-repository/green-CI freeze conditions before restarting 5F.3B
+- Milestone: 5F.3B — Live Corpus Capture & Freeze; the third 5F.3A corrective checkpoint is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` and the full corpus-v1 campaign must restart from the beginning
 
 ## Phase Overview
 
@@ -88,9 +88,9 @@ Later 5F milestones execute:
 
 Status: **ACTIVE**.
 
-**5F.3A — Corpus Contract & Capture Harness: THIRD CORRECTIVE CHANGESET FEDORA-VALIDATED; RE-FREEZE FINALIZATION PENDING.** The contract/harness baseline remains intact, but three live capture attempts exposed correctness defects before any corpus-v1 export or scoring: the post-fault sidecar boundary race, reverse derivation of live-shaped effect parents without a target timeline, and finally multiple-candidate hidden gold hardcoding optional parent ref `REF-0004`. The current corrective working set derives multiple-candidate supporting refs from actual child evidence and includes the target timeline only when present. Fedora validation has passed, including the dedicated defect regressions, private Phase-5F regression set, full 1308-test project gate, and separate research-harness static validation. Finalize the repository checkpoint with commit, push, local/remote equality, a clean working tree, and green CI before live capture resumes.
+**5F.3A — Corpus Contract & Capture Harness: THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`.** The contract/harness baseline remains intact, but three live capture attempts exposed correctness defects before any corpus-v1 export or scoring: the post-fault sidecar boundary race, reverse derivation of live-shaped effect parents without a target timeline, and finally multiple-candidate hidden gold hardcoding optional parent ref `REF-0004`. The current corrective working set derives multiple-candidate supporting refs from actual child evidence and includes the target timeline only when present. Fedora validation passed, including the dedicated defect regressions, private Phase-5F regression set, full 1308-test project gate, and separate research-harness static validation. Exact repository/content guards, commit/push, local/remote equality, a clean repository, and the four-job CI matrix also passed; the corrective checkpoint is frozen and live capture may resume only by restarting the full campaign.
 
-**5F.3B — Live Corpus Capture & Freeze: PAUSED.** After the Fedora-validated 5F.3A correction is committed, pushed, remote-equal, repository-clean, and CI-green, restart all 16 empirical executions from the beginning, derive all 20 adversarial cases, audit lineage/hidden-visible separation, and freeze corpus-v1 before 5F.4. Do not reuse empirical objects from failed attempts.
+**5F.3B — Live Corpus Capture & Freeze: ACTIVE.** Restart all 16 empirical executions from the beginning, derive all 20 adversarial cases, audit lineage/hidden-visible separation, and freeze corpus-v1 before 5F.4. Do not reuse empirical objects from failed attempts.
 
 Corpus-v1 must include multiple cases of:
 

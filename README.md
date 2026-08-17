@@ -15,7 +15,8 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
 - Last completed Phase-5F implementation milestone: **5F.3A — Corpus Contract & Capture Harness**
-- Current milestone: **5F.3A corrective checkpoint finalization — the third live-discovered multiple-candidate hidden-gold/live-shape correction passed Fedora validation; 5F.3B remains paused until repository freeze conditions pass**
+- Frozen Phase-5F.3A corrective checkpoint: **`ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI all passed**
+- Current milestone: **5F.3B — Live Corpus Capture & Freeze; restart the full corpus-v1 campaign from the beginning and do not reuse empirical objects from failed attempts**
 - Validated corrective gate: **1308/1308 unit tests PASS**, **152 Python files** in the source/test format/lint scope, strict mypy over **82 source files PASS**; `research/phase5f/capture_corpus_v1.py` also passed its separate compile/Ruff/direct-mypy validation because `scripts/check.sh` intentionally excludes `research/`
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**

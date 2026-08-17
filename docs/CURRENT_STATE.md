@@ -3,9 +3,12 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **5F.3A third corrective checkpoint FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`; 5F.3B ACTIVE — full live corpus capture restarts from the beginning**
+- Status: **5F.3 FROZEN — corpus-v1 capture/audit/freeze complete; 5F.4 ACTIVE — Structured Reasoner Output**
 - Last updated: 2026-08-17
 - Last completed implementation milestone: Phase 5F.3A — Corpus Contract & Capture Harness
+- Last completed research-artifact milestone: Phase 5F.3B — Live Corpus Capture & Freeze
+- Capture/freeze authority repository checkpoint: `64cffbe48c4a919752d68edae19f6a763295eb6e`
+- Frozen Phase-5F.3A corrective implementation checkpoint: `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`
 - Last verified repository checkpoint before 5F.3A: `295a57975253441dc4e2a18290ce5043a57e938a`
 - Branch: `sentinel-x-phase1`
 
@@ -79,7 +82,13 @@ unit tests: 1285 total
 
 The 5F.2 gate validates implementation integrity only; the deterministic baselines have not yet been scored on the frozen falsification corpus.
 
-Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture harness. The third corrective changeset has now passed Fedora validation: the two dedicated defect regressions pass, the 60 private Phase-5F tests pass, the full engineering gate passes with **1308/1308 unit tests**, **152 source+test Python files** in format/lint scope, and strict mypy over **82 source files**; `research/phase5f/capture_corpus_v1.py` also passes separate compile/Ruff/direct-mypy validation. The corrective checkpoint is re-frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`: Fedora validation passed, the exact 10-file repository/content guards passed, local/remote equality and a clean repository were proven after push, and the four-job GitHub Actions quality matrix completed successfully. 5F.3A itself produces no corpus and no score; 5F.3B now performs the real live campaign from the beginning.
+Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture harness. The third corrective changeset passed Fedora validation: the two dedicated defect regressions, the 60 private Phase-5F tests, the full **1308/1308** unit-test gate, **152 source+test Python files** in format/lint scope, strict mypy over **82 source files**, and separate capture-harness static validation all passed. The corrective implementation checkpoint is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`.
+
+Phase-5F.3B is now complete. The authoritative campaign ran from repository checkpoint `64cffbe48c4a919752d68edae19f6a763295eb6e`, whose transition CI run `32044606556` completed successfully across Python 3.11–3.14. Gate 1 preflight, Gate 2 live capture attempt #4, Gate 3 independent exported-artifact audit, and Gate 4 freeze/preservation all passed on boot `4ff955e4421e487b946423c40beb713c`. Corpus-v1 contains **36 cases: 16 empirical + 20 adversarial; HARD=28**. The frozen archive SHA-256 is `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; the preserved attempt-04 log SHA-256 is `5391a3014643c6bfc352c46e60b32b98ebb1a1985587531b641ff5c7913a1128`. The preservation set is operator-local, hash-verified, read-only, and outside the repository. No scored reasoner output exists.
+
+The first Gate-3 operator audit attempt produced a false-positive failure because the audit command looked for `statistical_no_effect_claim` instead of the frozen serialized key `statistical_no-effect_claim`. A read-only root-cause check confirmed the corpus bytes were correct; the corrected full audit then passed without recapture, rewrite, or re-export.
+
+`research/phase5f/CORPUS_V1_CAPTURE.md` is retained byte-for-byte as the pre-score execution protocol. Its historical top-line corrective-status wording is not rewritten after observing the successful live result; this document and the Phase-5 status document carry the authoritative post-capture completion state.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -90,7 +99,6 @@ Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture 
 
 ## Not Yet Implemented
 
-- Phase-5F blind empirical/adversarial corpus capture and lineage validation;
 - scored comparison of B0/B1/B1S on the frozen corpus;
 - external/blinded LLM evaluation process;
 - reasoner output ClaimDraft runtime model;
@@ -166,17 +174,25 @@ Status: **FROZEN**.
 Implemented three private function-only comparators on the 5F.1 boundary: B0 intentionally naive state/rule logic; B1 requirement-graph + monotonic-time + boot + bounded-coverage reasoning over MINIMAL factual evidence; and B1S conservative mapping of the existing frozen synthesis serialization. No benchmark score or value claim is assigned by this milestone.
 
 ### 5F.3 — Blind Falsification Corpus
-Status: **ACTIVE**.
+Status: **FROZEN**.
 
 **5F.3A — Corpus Contract & Capture Harness: THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`.** The initial live attempt on commit `07e19d5dbb39f831a69e4b41b60624ec786558f8` exposed a capture-boundary race: the read-only sidecar could be stopped immediately after the frozen runner returned, before a completed sample round reached the recorded controlled-fault end. The validator correctly rejected that candidate case. The corrective harness keeps the sidecar running, with a bounded wait, until a completed round is timestamped at or after the closed fault end; it fails explicitly if this proof sample is not obtained. The failed attempt produced no valid corpus-v1 and no scored output.
 
-**5F.3B — Live Corpus Capture & Freeze: ACTIVE.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` exposed and led to correction of the reverse/counterevidence live-shape assumption. The third attempt on `7f405633d104bc1360a10d066dd75ebb8d027fbe` progressed through empirical acquisition and reverse derivation, then failed in multiple-candidate ambiguity construction because hidden gold still hardcoded optional parent ref `REF-0004`. Production empirical effect cases may lack that target timeline. The `CorpusCase` invariant correctly rejected the child because hidden gold referenced evidence absent from the visible case. No corpus-v1 was exported and no scored output exists. The multiple-candidate correction derives its supporting refs from the actual child evidence and includes the target timeline only when present, then 5F.3B restarts from the beginning.
+**5F.3B — Live Corpus Capture & Freeze: FROZEN.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` exposed the reverse/counterevidence live-shape assumption. The third attempt on `7f405633d104bc1360a10d066dd75ebb8d027fbe` exposed the multiple-candidate hidden-gold assumption. Both failed before valid corpus freeze and produced no score. The third corrective implementation at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` was then frozen, and the repository state was advanced to CI-proven capture authority `64cffbe48c4a919752d68edae19f6a763295eb6e`. Fresh attempt #4 restarted all empirical executions, captured 16 empirical cases, derived 20 adversarial cases, passed the frozen internal corpus audit and an independent exported-artifact audit, and froze the exact archive before any scoring. Frozen archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; preserved attempt log SHA-256: `5391a3014643c6bfc352c46e60b32b98ebb1a1985587531b641ff5c7913a1128`; capture boot: `4ff955e4421e487b946423c40beb713c`. `scored_reasoner_outputs_present=False`.
+
+### 5F.4 — Structured Reasoner Output
+Status: **ACTIVE**.
+
+Next work is limited to implementing/freezing the preregistered common machine-readable final-output boundary (`classification`, `abstain`, `claims`, `unresolved`, `evidence_refs`) and its parse/validation contract. Do not run scored B2/B3/B4 evaluations until this boundary and its validation are frozen.
 
 ## Frozen FULL Reference and Repository Checkpoints
 
 - FULL Phase-5E.4 reference commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 repository checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
+- Frozen Phase-5F.3A corrective implementation checkpoint: `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`
+- Phase-5F.3B capture/freeze authority checkpoint: `64cffbe48c4a919752d68edae19f6a763295eb6e`
+- Frozen corpus-v1 archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`
 - Branch: `sentinel-x-phase1`
-- Date: 2026-08-16
+- Date: 2026-08-17
 
 The current repository HEAD must be read from Git. The FULL reference commit remains fixed for ablation even as private Phase-5F evaluation infrastructure advances.

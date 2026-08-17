@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.3B — Live Corpus Capture & Freeze; the third 5F.3A corrective checkpoint is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` and the full corpus-v1 campaign must restart from the beginning
+- Milestone: 5F.4 — Structured Reasoner Output; 5F.3 corpus-v1 is frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18` and no scored reasoner output exists
 
 ## Phase Overview
 
@@ -86,11 +86,11 @@ Later 5F milestones execute:
 
 ### 5F.3 — Blind Falsification Corpus
 
-Status: **ACTIVE**.
+Status: **FROZEN**.
 
 **5F.3A — Corpus Contract & Capture Harness: THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`.** The contract/harness baseline remains intact, but three live capture attempts exposed correctness defects before any corpus-v1 export or scoring: the post-fault sidecar boundary race, reverse derivation of live-shaped effect parents without a target timeline, and finally multiple-candidate hidden gold hardcoding optional parent ref `REF-0004`. The current corrective working set derives multiple-candidate supporting refs from actual child evidence and includes the target timeline only when present. Fedora validation passed, including the dedicated defect regressions, private Phase-5F regression set, full 1308-test project gate, and separate research-harness static validation. Exact repository/content guards, commit/push, local/remote equality, a clean repository, and the four-job CI matrix also passed; the corrective checkpoint is frozen and live capture may resume only by restarting the full campaign.
 
-**5F.3B — Live Corpus Capture & Freeze: ACTIVE.** Restart all 16 empirical executions from the beginning, derive all 20 adversarial cases, audit lineage/hidden-visible separation, and freeze corpus-v1 before 5F.4. Do not reuse empirical objects from failed attempts.
+**5F.3B — Live Corpus Capture & Freeze: FROZEN.** Fresh attempt #4 ran from CI-proven repository checkpoint `64cffbe48c4a919752d68edae19f6a763295eb6e`, restarted the full campaign, captured all 16 empirical executions, derived all 20 adversarial cases, passed internal and independent exported-artifact audits, and froze corpus-v1 before any scored reasoner output. Corpus counts are 36 total / 16 empirical / 20 adversarial / 28 HARD. Frozen archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`. No failed-attempt empirical objects were reused.
 
 Corpus-v1 must include multiple cases of:
 
@@ -107,7 +107,9 @@ Empirical live cases must remain distinguishable from derived adversarial varian
 
 ### 5F.4 — Structured Reasoner Output
 
-Score only final machine-readable output; do not request/score hidden chain-of-thought.
+Status: **ACTIVE**.
+
+Implement and freeze the preregistered common machine-readable final-output boundary before scored reasoner execution. Score only final machine-readable output; do not request/score hidden chain-of-thought. B2/B3/B4 remain unauthorized until the output/parse boundary is frozen.
 
 ### 5F.5 — Primary Metrics
 

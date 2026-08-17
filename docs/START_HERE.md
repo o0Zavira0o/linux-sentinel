@@ -23,9 +23,10 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
 - Phase 5F.3A: **THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — dedicated, Phase-5F, full-project, research-harness static, exact repository/content, push/remote-equality, clean-repository, and four-job CI guards all passed**
-- Current milestone: **5F.3B — Live Corpus Capture & Freeze; restart the complete corpus-v1 campaign from the beginning and do not reuse empirical objects from failed attempts**
+- Phase 5F.3B: **FROZEN — attempt #4 completed the fresh 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
+- Current milestone: **5F.4 — Structured Reasoner Output**
 - Last completed implementation milestone: **Phase 5F.3A — Corpus Contract & Capture Harness**
-- Next milestone after 5F.3 corpus freeze: **5F.4 — Structured Reasoner Output**
+- Last completed research-artifact milestone: **Phase 5F.3B — Live Corpus Capture & Freeze**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
 ## What Currently Works
@@ -45,7 +46,8 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - pre-execution protocol provenance;
 - protocol-bound live execution with boot/backend binding;
 - private Phase-5F RAW/MINIMAL/FULL projection from one gold-free case source, with hidden `CaseGold` kept outside visible exports;
-- private deterministic B0/B1/B1S comparators ready for later scoring, with no benchmark value conclusion assigned yet.
+- private deterministic B0/B1/B1S comparators ready for later scoring, with no benchmark value conclusion assigned yet;
+- frozen Phase-5F corpus-v1: 36 cases / 16 empirical / 20 adversarial / 28 HARD, with hidden/visible separation and source-run lineage independently audited before scoring.
 
 Frozen Phase-5E.4 FULL-reference Fedora baseline:
 
@@ -103,10 +105,10 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. run the authoritative 5F.3B preflight and restart the full 16-run empirical capture protocol from the beginning; do not reuse empirical objects from any failed attempt;
-2. enforce same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic transformation provenance before scoring;
-3. execute isolated RAW/MINIMAL/FULL reasoner comparisons only after the corpus is frozen;
-4. score preregistered primary metrics and ablations;
+1. implement and freeze the 5F.4 common structured final-output/parse boundary required by the preregistered evaluation protocol;
+2. only after 5F.4 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
+3. score the preregistered primary metrics and HARD/full-corpus analyses without changing frozen criteria;
+4. perform required Full-vs-Minimal and field ablations;
 5. issue one required Phase-5F verdict;
 6. only if the thesis survives, perform Phase 5R deletion-first reduction.
 
@@ -137,7 +139,7 @@ After this file read:
 8. [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md)
 9. [`phases/PHASE-05-EVIDENCE-AND-FALSIFICATION.md`](phases/PHASE-05-EVIDENCE-AND-FALSIFICATION.md)
 10. [`../research/phase5f/THESIS.md`](../research/phase5f/THESIS.md) and the other frozen Phase-5F preregistration documents
-11. [`../research/phase5f/CORPUS_V1_CAPTURE.md`](../research/phase5f/CORPUS_V1_CAPTURE.md) for the active 5F.3B live corpus campaign
+11. [`../research/phase5f/CORPUS_V1_CAPTURE.md`](../research/phase5f/CORPUS_V1_CAPTURE.md) as the frozen execution/capture protocol that produced corpus-v1; preserve its historical pre-success status wording rather than rewriting the protocol after the observed live result
 12. relevant ADRs from [`adr/README.md`](adr/README.md)
 
 For work touching earlier phases, read that phase document before changing code.
@@ -162,7 +164,7 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-17
-- Phase: 5F.3B live corpus capture and freeze
+- Phase: 5F.4 structured reasoner output
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: third multiple-candidate live-shape correction is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` after Fedora/repository/remote/CI guards; restart authoritative 5F.3B live corpus capture/audit from the beginning
+- Update reason: 5F.3B attempt #4 completed the full live capture/audit/freeze path; corpus-v1 archive SHA-256 is `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; activate 5F.4 with no scored reasoner output yet

@@ -38,8 +38,8 @@ Never resolve contradictions silently. Report them.
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
-- Phase 5F.3A: **FROZEN — corpus contract, transformations, and capture harness established**
-- Active milestone: **5F.3B — live corpus capture, lineage audit, and corpus freeze**
+- Phase 5F.3A: **CORRECTIVE CHANGESET FEDORA-VALIDATED — corpus contract/capture harness remain the baseline; the third live-discovered multiple-candidate hidden-gold/live-shape defect correction passed dedicated, Phase-5F, full-project, and research-harness static validation**
+- Active milestone: **5F.3A corrective checkpoint finalization — no further implementation change is authorized; 5F.3B remains paused until the validated correction is committed, pushed, remote-equal, repository-clean, and CI-green**
 
 The previous post-5E.4 feature-growth plan is superseded.
 

@@ -533,13 +533,73 @@ class Phase5FCorpusTests(unittest.TestCase):
             case_id="CASE-0033",
             scenario_family=MULTIPLE_CANDIDATE_AMBIGUITY_FAMILY,
         )
+        result = run_b1_graph_time(derived.source)
+        self.assertEqual(result["classification"], "AMBIGUOUS")
         self.assertEqual(
-            run_b1_graph_time(derived.source)["classification"], "AMBIGUOUS"
+            set(result["evidence_refs"]),
+            set(derived.gold.supporting_evidence_refs),
         )
         self.assertTrue(derived.gold.must_abstain)
         self.assertEqual(
             run_b1s_current_synthesis(derived.source)["classification"], "INSUFFICIENT"
         )
+
+    def test_multiple_candidate_transform_supports_live_shaped_effect_without_target_timeline(
+        self,
+    ) -> None:
+        original = self._empirical("CASE-0001", effect=True)
+        source = CaseSource(
+            case_id=original.source.case_id,
+            task=original.source.task,
+            environment=original.source.environment,
+            evidence_items=tuple(
+                item
+                for item in original.source.evidence_items
+                if item["ref"] != "REF-0004"
+            ),
+        )
+        gold = CaseGold(
+            case_id=original.gold.case_id,
+            classification=original.gold.classification,
+            must_abstain=original.gold.must_abstain,
+            supporting_evidence_refs=tuple(
+                ref
+                for ref in original.gold.supporting_evidence_refs
+                if ref != "REF-0004"
+            ),
+            invalid_evidence_refs=original.gold.invalid_evidence_refs,
+            counterevidence_refs=original.gold.counterevidence_refs,
+            maximum_allowed_causal_strength=(
+                original.gold.maximum_allowed_causal_strength
+            ),
+            origin=original.gold.origin,
+            source_run_group=original.gold.source_run_group,
+        )
+        parent = CorpusCase(
+            source=source,
+            gold=gold,
+            scenario_family=original.scenario_family,
+            lineage_by_ref={
+                ref: token
+                for ref, token in original.lineage_by_ref.items()
+                if ref != "REF-0004"
+            },
+        )
+
+        derived = derive_adversarial_case(
+            parent,
+            case_id="CASE-0033",
+            scenario_family=MULTIPLE_CANDIDATE_AMBIGUITY_FAMILY,
+        )
+
+        result = run_b1_graph_time(derived.source)
+        self.assertEqual(result["classification"], "AMBIGUOUS")
+        self.assertEqual(
+            set(result["evidence_refs"]),
+            set(derived.gold.supporting_evidence_refs),
+        )
+        self.assertNotIn("REF-0004", derived.gold.supporting_evidence_refs)
+        self.assertTrue(derived.gold.must_abstain)
 
     def test_transformation_plan_rejects_wrong_parent_or_family(self) -> None:
         parent = self._empirical("CASE-0009", effect=False)

@@ -134,7 +134,9 @@ The sidecar must obtain at least one completed source/dependent sample round **b
 
 After the frozen live runner returns successfully, the sidecar must remain active until at least one completed source/dependent sample round has `captured_monotonic_usec >= ground_truth.ended_monotonic_usec`. The wait is explicitly bounded at 2.0 seconds. If that post-fault proof sample is not captured within the bound, the run fails and is not a corpus case. This rule was added after the first 5F.3B attempt exposed a race in which immediate sidecar shutdown could leave the last RAW sample just before the recorded fault end.
 
-The second 5F.3B attempt exposed a separate adversarial-derivation contract bug after the empirical campaign progressed: reverse/counterevidence derivation assumed every empirical effect parent had a target `incident_timeline`. That is not guaranteed because controlled-coverage anomaly evidence is sufficient for `EFFECT_OBSERVED` even when `pairwise_evidence` is absent. The corrected reverse transform must create only the **derived adversarial** target timeline when missing; it must not fabricate or backfill pairwise timing into the empirical parent.
+The second 5F.3B attempt exposed a separate adversarial-derivation contract bug after the empirical campaign progressed: reverse/counterevidence derivation assumed every empirical effect parent had a target `incident_timeline`. That is not guaranteed because controlled-coverage anomaly evidence is sufficient for `EFFECT_OBSERVED` even when `pairwise_evidence` is absent. The corrected reverse transform creates only the **derived adversarial** target timeline when missing; it does not fabricate or backfill pairwise timing into the empirical parent.
+
+The third 5F.3B attempt progressed through that corrected reverse path and then exposed the same optional-target-timeline assumption in multiple-candidate hidden gold: supporting refs hardcoded `REF-0004`, which is absent from valid live-shaped empirical effect parents without pairwise evidence. Multiple-candidate supporting refs must therefore be derived from the actual child evidence used by the ambiguity rule. The target timeline is included only when present; no hidden ref may name absent visible evidence.
 
 A nonzero `systemctl show` return code is a sidecar error and fails the run.
 
@@ -327,7 +329,8 @@ Transformation:
 - preserve the original requirement path;
 - add a second plausible Wants source and a temporally compatible source transition;
 - remove stale FULL derived controlled/synthesis records;
-- hidden gold = `AMBIGUOUS`, `must_abstain=true`.
+- hidden gold = `AMBIGUOUS`, `must_abstain=true`;
+- hidden supporting refs must match the actual ambiguity evidence used by B1: scope, both requirement paths/source transitions, plus the target timeline only when one exists; no optional parent ref may be hardcoded.
 
 ## 14. Stale FULL Evidence Policy
 

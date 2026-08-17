@@ -418,6 +418,7 @@ def _derive_multiple_candidate(parent: CorpusCase, case_id: str) -> CorpusCase:
     items, lineage = _mutable_case(parent.source, parent.lineage_by_ref)
     scope_item = _single_payload_item(items, "scope", "minimal")
     source_item = _timeline_item(items, unit_role="source")
+    target_item = _optional_timeline_item(items, unit_role="target")
     source_time = _required_nonnegative_int(
         cast(dict[str, object], source_item["minimal"]),
         "transition_monotonic_usec",
@@ -486,21 +487,21 @@ def _derive_multiple_candidate(parent: CorpusCase, case_id: str) -> CorpusCase:
     lineage[timeline_ref] = f"derived:{case_id}:alternate-source-transition"
     _drop_invalidated_full_records(items, lineage)
     source = _rebuild_source(parent.source, case_id, items)
+    supporting = [
+        cast(str, scope_item["ref"]),
+        cast(str, original_topology["ref"]),
+        topology_ref,
+        cast(str, source_item["ref"]),
+        timeline_ref,
+    ]
+    if target_item is not None:
+        supporting.append(cast(str, target_item["ref"]))
     gold = _derived_gold(
         parent,
         case_id=case_id,
         classification="AMBIGUOUS",
         must_abstain=True,
-        supporting=(
-            "REF-0001",
-            "REF-0002",
-            topology_ref,
-            "REF-0003",
-            timeline_ref,
-            "REF-0004",
-            "REF-0005",
-            "REF-0010",
-        ),
+        supporting=supporting,
         invalid=(),
         counter=(),
         maximum_causal_strength="none",

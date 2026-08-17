@@ -22,8 +22,8 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
-- Phase 5F.3A: **CORRECTED/FROZEN — live-capture post-fault sample boundary fixed after the first 5F.3B attempt exposed a race**
-- Current milestone: **5F.3A corrective re-freeze — reverse transform must support empirical effect without pairwise target timeline; 5F.3B is paused**
+- Phase 5F.3A: **THIRD CORRECTIVE CHANGESET FEDORA-VALIDATED — the multiple-candidate hidden-gold/live-shape correction has passed dedicated, Phase-5F, full-project, and research-harness static validation; repository freeze finalization remains**
+- Current milestone: **5F.3A corrective checkpoint finalization — multiple-candidate ambiguity now derives hidden supporting refs from actual child evidence; 5F.3B remains paused until commit/push/remote-equality/clean-repository/green-CI guards pass**
 - Last completed implementation milestone: **Phase 5F.3A — Corpus Contract & Capture Harness**
 - Next milestone after 5F.3 corpus freeze: **5F.4 — Structured Reasoner Output**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
@@ -103,7 +103,7 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. re-freeze the second 5F.3A correctness correction, then restart the full 5F.3B capture protocol from the beginning; do not reuse empirical objects from the failed second attempt;
+1. finalize the Fedora-validated third 5F.3A corrective checkpoint with commit, push, local/remote equality, clean-repository, and green-CI guards; then restart the full 5F.3B capture protocol from the beginning and do not reuse empirical objects from any failed attempt;
 2. enforce same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic transformation provenance before scoring;
 3. execute isolated RAW/MINIMAL/FULL reasoner comparisons only after the corpus is frozen;
 4. score preregistered primary metrics and ablations;
@@ -162,7 +162,7 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-17
-- Phase: 5F.3A corrective re-freeze before 5F.3B restart
+- Phase: 5F.3A third corrective checkpoint finalization before 5F.3B restart
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: corpus-v1 contracts, deterministic transformations, and operator capture harness frozen; transition to live corpus capture/audit
+- Update reason: third multiple-candidate live-shape correction passed Fedora validation; finalize the corrective repository checkpoint before restarting live corpus capture/audit

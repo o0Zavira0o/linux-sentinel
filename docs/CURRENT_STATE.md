@@ -3,7 +3,7 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **PAUSED — 5F.3B blocked on second 5F.3A correctness correction before live restart**
+- Status: **5F.3A third corrective changeset FEDORA-VALIDATED; 5F.3B paused pending repository freeze finalization**
 - Last updated: 2026-08-17
 - Last completed implementation milestone: Phase 5F.3A — Corpus Contract & Capture Harness
 - Last verified repository checkpoint before 5F.3A: `295a57975253441dc4e2a18290ce5043a57e938a`
@@ -79,7 +79,7 @@ unit tests: 1285 total
 
 The 5F.2 gate validates implementation integrity only; the deterministic baselines have not yet been scored on the frozen falsification corpus.
 
-Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture harness. Its commit is eligible only after Fedora confirms the expected 1303-test / 151-format-scope / 82-source-mypy gate and separate compile/Ruff validation of `research/phase5f/capture_corpus_v1.py`. 5F.3A itself produces no corpus and no score; 5F.3B performs the real live campaign.
+Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture harness. The third corrective changeset has now passed Fedora validation: the two dedicated defect regressions pass, the 60 private Phase-5F tests pass, the full engineering gate passes with **1308/1308 unit tests**, **152 source+test Python files** in format/lint scope, and strict mypy over **82 source files**; `research/phase5f/capture_corpus_v1.py` also passes separate compile/Ruff/direct-mypy validation. The corrective checkpoint is not considered re-frozen until commit, push, local/remote equality, clean-repository, and green-CI guards pass. 5F.3A itself produces no corpus and no score; 5F.3B performs the real live campaign.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -168,9 +168,9 @@ Implemented three private function-only comparators on the 5F.1 boundary: B0 int
 ### 5F.3 — Blind Falsification Corpus
 Status: **ACTIVE**.
 
-**5F.3A — Corpus Contract & Capture Harness: CORRECTED AND RE-FROZEN FOR LIVE CAPTURE.** The initial live attempt on commit `07e19d5dbb39f831a69e4b41b60624ec786558f8` exposed a capture-boundary race: the read-only sidecar could be stopped immediately after the frozen runner returned, before a completed sample round reached the recorded controlled-fault end. The validator correctly rejected that candidate case. The corrective harness keeps the sidecar running, with a bounded wait, until a completed round is timestamped at or after the closed fault end; it fails explicitly if this proof sample is not obtained. The failed attempt produced no valid corpus-v1 and no scored output.
+**5F.3A — Corpus Contract & Capture Harness: THIRD CORRECTIVE CHANGESET FEDORA-VALIDATED; RE-FREEZE FINALIZATION PENDING.** The initial live attempt on commit `07e19d5dbb39f831a69e4b41b60624ec786558f8` exposed a capture-boundary race: the read-only sidecar could be stopped immediately after the frozen runner returned, before a completed sample round reached the recorded controlled-fault end. The validator correctly rejected that candidate case. The corrective harness keeps the sidecar running, with a bounded wait, until a completed round is timestamped at or after the closed fault end; it fails explicitly if this proof sample is not obtained. The failed attempt produced no valid corpus-v1 and no scored output.
 
-**5F.3B — Live Corpus Capture & Freeze: PAUSED pending second 5F.3A correctness correction.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` passed preflight and progressed beyond empirical live acquisition, then failed during reverse/counterevidence derivation because the transformation assumed every empirical effect case contained a target `incident_timeline`. That assumption is stronger than the production empirical contract: `EFFECT_OBSERVED` may come from controlled coverage when `pairwise_evidence` is absent. No corpus-v1 was exported and no scored output exists. Re-freeze the corrected transformation/test/docs before restarting 5F.3B from the beginning.
+**5F.3B — Live Corpus Capture & Freeze: PAUSED pending repository freeze finalization of the Fedora-validated third 5F.3A correctness correction.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` exposed and led to correction of the reverse/counterevidence live-shape assumption. The third attempt on `7f405633d104bc1360a10d066dd75ebb8d027fbe` progressed through empirical acquisition and reverse derivation, then failed in multiple-candidate ambiguity construction because hidden gold still hardcoded optional parent ref `REF-0004`. Production empirical effect cases may lack that target timeline. The `CorpusCase` invariant correctly rejected the child because hidden gold referenced evidence absent from the visible case. No corpus-v1 was exported and no scored output exists. The multiple-candidate correction derives its supporting refs from the actual child evidence and includes the target timeline only when present, then 5F.3B restarts from the beginning.
 
 ## Frozen FULL Reference and Repository Checkpoints
 

@@ -168,9 +168,9 @@ Implemented three private function-only comparators on the 5F.1 boundary: B0 int
 ### 5F.3 — Blind Falsification Corpus
 Status: **ACTIVE**.
 
-**5F.3A — Corpus Contract & Capture Harness: FROZEN after successful repository validation/CI.** The code defines the exact 36-case plan, hidden lineage/gold provenance, five deterministic adversarial transformations, atomic corpus export, bounded read-only sidecar contract, observer pilot, and operator-only live harness. No scored output is generated.
+**5F.3A — Corpus Contract & Capture Harness: CORRECTED AND RE-FROZEN FOR LIVE CAPTURE.** The initial live attempt on commit `07e19d5dbb39f831a69e4b41b60624ec786558f8` exposed a capture-boundary race: the read-only sidecar could be stopped immediately after the frozen runner returned, before a completed sample round reached the recorded controlled-fault end. The validator correctly rejected that candidate case. The corrective harness keeps the sidecar running, with a bounded wait, until a completed round is timestamped at or after the closed fault end; it fails explicitly if this proof sample is not obtained. The failed attempt produced no valid corpus-v1 and no scored output.
 
-**5F.3B — Live Corpus Capture & Freeze: CURRENT.** Run the frozen harness on Fedora, require one boot across pilot/campaign, capture 16 distinct empirical runs in the frozen order, derive 20 adversarial cases, audit same-case RAW/MINIMAL/FULL lineage and source-run grouping, archive/hash the corpus, then freeze it before any reasoner scoring.
+**5F.3B — Live Corpus Capture & Freeze: CURRENT after corrective 5F.3A freeze.** Restart the campaign from the beginning using the corrective frozen harness, require one boot across pilot/campaign, capture 16 distinct empirical runs in the frozen order, derive 20 adversarial cases, audit same-case RAW/MINIMAL/FULL lineage and source-run grouping, archive/hash the corpus, then freeze it before any reasoner scoring.
 
 ## Frozen FULL Reference and Repository Checkpoints
 

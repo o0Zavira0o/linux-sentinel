@@ -1,6 +1,6 @@
 # Phase 5F.3 Corpus-v1 Capture Protocol
 
-Status: FROZEN WITH PHASE-5F.3A IMPLEMENTATION AFTER SUCCESSFUL VALIDATION/CI
+Status: FROZEN WITH CORRECTIVE PHASE-5F.3A LIVE-CAPTURE BOUNDARY FIX AFTER VALIDATION/CI
 
 This document is an execution/capture protocol derived from the six Phase-5F preregistration documents. It does **not** change `THESIS.md`, `NON_GOALS.md`, `EVALUATION_PROTOCOL.md`, `BASELINES.md`, `METRICS.md`, or `KILL_CRITERIA.md`.
 
@@ -131,6 +131,8 @@ StateChangeTimestampMonotonic
 ```
 
 The sidecar must obtain at least one completed source/dependent sample round **before** invoking the frozen live runner. This prevents the RAW stream from beginning only after the controlled fault has already started.
+
+After the frozen live runner returns successfully, the sidecar must remain active until at least one completed source/dependent sample round has `captured_monotonic_usec >= ground_truth.ended_monotonic_usec`. The wait is explicitly bounded at 2.0 seconds. If that post-fault proof sample is not captured within the bound, the run fails and is not a corpus case. This rule was added after the first 5F.3B attempt exposed a race in which immediate sidecar shutdown could leave the last RAW sample just before the recorded fault end.
 
 A nonzero `systemctl show` return code is a sidecar error and fails the run.
 

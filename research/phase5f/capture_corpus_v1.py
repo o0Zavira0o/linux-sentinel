@@ -55,6 +55,7 @@ SOURCE_ID = "p5f3-corpus-source"
 DEPENDENT_ID = "p5f3-corpus-dependent"
 SIDECAR_INTERVAL_SECONDS = 0.10
 SIDECAR_MAX_ROUNDS = 160
+SIDECAR_POST_FAULT_TIMEOUT_SECONDS = 2.0
 MAX_SYSTEMCTL_OUTPUT_BYTES = 32 * 1024
 MAX_JOURNAL_OUTPUT_BYTES = 512 * 1024
 JOURNAL_MAX_LINES = 256
@@ -241,6 +242,34 @@ def _capture_journal(
     }
 
 
+def _wait_for_sidecar_sample_through(
+    condition: threading.Condition,
+    samples: list[dict[str, object]],
+    errors: list[str],
+    required_monotonic_usec: int,
+    *,
+    timeout_seconds: float = SIDECAR_POST_FAULT_TIMEOUT_SECONDS,
+) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    with condition:
+        while True:
+            if errors:
+                raise RuntimeError("; ".join(errors))
+            latest: int | None = None
+            if samples:
+                candidate = samples[-1].get("captured_monotonic_usec")
+                if type(candidate) is int:
+                    latest = candidate
+            if latest is not None and latest >= required_monotonic_usec:
+                return
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise RuntimeError(
+                    "sidecar did not capture a completed sample round through fault end"
+                )
+            condition.wait(timeout=remaining)
+
+
 def _run_with_sidecar(
     artifact: SystemdPropagationPairArtifact, *, token: str
 ) -> tuple[ControlledPropagationProtocolBoundExecution, dict[str, object]]:
@@ -249,6 +278,7 @@ def _run_with_sidecar(
     samples: list[dict[str, object]] = []
     errors: list[str] = []
     lock = threading.Lock()
+    sample_condition = threading.Condition(lock)
     start_wall = datetime.now(timezone.utc)
     start_epoch = start_wall.timestamp()
     start_mono = time.monotonic_ns() // 1_000
@@ -260,6 +290,7 @@ def _run_with_sidecar(
                 captured_at = datetime.now(timezone.utc).isoformat()
                 captured_mono = time.monotonic_ns() // 1_000
                 round_rows: list[dict[str, object]] = []
+                round_errors: list[str] = []
                 for unit in (artifact.source_unit, artifact.dependent_unit):
                     returncode, duration_usec, stdout, stderr = _systemctl_show(unit)
                     row = {
@@ -274,15 +305,21 @@ def _run_with_sidecar(
                     }
                     round_rows.append(row)
                     if returncode != 0:
-                        errors.append(f"systemctl show failed for {unit}")
-                with lock:
+                        round_errors.append(f"systemctl show failed for {unit}")
+                with sample_condition:
                     samples.extend(round_rows)
+                    errors.extend(round_errors)
+                    sample_condition.notify_all()
                 first_sample_ready.set()
                 if stop.wait(SIDECAR_INTERVAL_SECONDS):
                     return
-            errors.append("sidecar sampling capacity exhausted")
+            with sample_condition:
+                errors.append("sidecar sampling capacity exhausted")
+                sample_condition.notify_all()
         except BaseException as exc:
-            errors.append(f"sidecar exception: {type(exc).__name__}: {exc}")
+            with sample_condition:
+                errors.append(f"sidecar exception: {type(exc).__name__}: {exc}")
+                sample_condition.notify_all()
             first_sample_ready.set()
 
     thread = threading.Thread(
@@ -302,6 +339,15 @@ def _run_with_sidecar(
             artifact,
             _manifest(artifact, token=token),
             POLICY,
+        )
+        ground = execution.live_run.experiment_record.injection_outcome.ground_truth
+        if ground.ended_monotonic_usec is None:
+            raise RuntimeError("controlled fault ground truth did not close")
+        _wait_for_sidecar_sample_through(
+            sample_condition,
+            samples,
+            errors,
+            ground.ended_monotonic_usec,
         )
     finally:
         stop.set()

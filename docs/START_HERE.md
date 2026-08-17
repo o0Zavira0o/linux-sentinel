@@ -22,7 +22,7 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
-- Phase 5F.3A: **FROZEN — corpus contract, transformations, and capture harness established**
+- Phase 5F.3A: **CORRECTED/FROZEN — live-capture post-fault sample boundary fixed after the first 5F.3B attempt exposed a race**
 - Current milestone: **5F.3B — Live Corpus Capture & Freeze**
 - Last completed implementation milestone: **Phase 5F.3A — Corpus Contract & Capture Harness**
 - Next milestone after 5F.3 corpus freeze: **5F.4 — Structured Reasoner Output**
@@ -103,7 +103,7 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. execute the frozen 5F.3A capture protocol to build corpus-v1 while keeping 16 empirical live cases and 20 adversarial derived cases distinct;
+1. execute the corrective frozen 5F.3A capture protocol from the beginning to build corpus-v1 while keeping 16 empirical live cases and 20 adversarial derived cases distinct;
 2. enforce same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic transformation provenance before scoring;
 3. execute isolated RAW/MINIMAL/FULL reasoner comparisons only after the corpus is frozen;
 4. score preregistered primary metrics and ablations;

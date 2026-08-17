@@ -25,7 +25,7 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.3A: **THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — dedicated, Phase-5F, full-project, research-harness static, exact repository/content, push/remote-equality, clean-repository, and four-job CI guards all passed**
 - Phase 5F.3B: **FROZEN — attempt #4 completed the fresh 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
 - Phase 5F.4: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — structured reasoner output boundary passed Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and four-job CI run `32059127141`; no scored output exists**
-- Current milestone: **5F.5 — Primary Metrics**
+- Current milestone: **5F.5 — Primary Metrics; scorer candidate implemented and Fedora-validated, checkpoint/CI freeze pending**
 - Last completed implementation milestone: **Phase 5F.4 — Structured Reasoner Output**
 - Last completed research-artifact milestone: **Phase 5F.3B — Live Corpus Capture & Freeze**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
@@ -106,7 +106,7 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. implement and freeze the preregistered 5F.5 M1–M8 scoring/aggregation boundary before inspecting scored B2/B3/B4 results;
+1. validate and freeze the implemented 5F.5 M1–M8 scoring/aggregation candidate before inspecting scored B2/B3/B4 results;
 2. only after 5F.5 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
 3. report preregistered HARD/full-corpus, empirical/adversarial, scenario-family, and repeat/condition analyses without changing frozen criteria;
 4. perform required Full-vs-Minimal and field ablations;
@@ -168,4 +168,4 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 - Phase: 5F.5 primary metrics
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: 5F.4 Structured Reasoner Output is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`; exact-SHA GitHub Actions run `32059127141` passed across Python 3.11–3.14 with local/remote equality and a clean repository. 5F.5 Primary Metrics is now active; no scored B2/B3/B4 output exists, and scorer implementation/freeze must precede scored execution.
+- Update reason: 5F.4 is frozen and 5F.5 now has a private pre-score scorer candidate implementing M1–M8 and the preregistered analysis slices. The six frozen preregistration files and corpus-v1 remain unchanged; no scored B2/B3/B4 output exists. Authoritative Fedora validation passed 15/15 dedicated tests, 89/89 private Phase-5F tests, and the full 1337/1337 gate with 156 Python files formatted and strict mypy clean across 84 source files. Checkpoint, push, exact-SHA CI, and scorer freeze are still required before scored execution.

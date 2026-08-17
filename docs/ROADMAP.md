@@ -113,9 +113,9 @@ The private strict bare-JSON parser/validator implements the preregistered outpu
 
 ### 5F.5 — Primary Metrics
 
-Status: **ACTIVE — IMPLEMENT AND FREEZE SCORING BEFORE SCORED REASONER OUTPUTS**.
+Status: **ACTIVE — SCORER CANDIDATE IMPLEMENTED; VALIDATION/FREEZE PENDING BEFORE SCORED REASONER OUTPUTS**.
 
-Implement the preregistered M1–M8 scorer and analysis aggregation boundaries before B2/B3/B4 execution. The frozen metric definitions, thresholds, HARD/full analysis sets, and benchmark-validity rules are not reopened.
+The candidate private scorer implements the preregistered M1–M8 metrics, exact 36×3×3 scored-matrix validation, pseudoreplication grouping visibility, and all/HARD, empirical/adversarial, family, condition, and repeat slices. The frozen metric definitions, thresholds, HARD/full analysis sets, preregistration files, and benchmark-validity rules are not reopened. Authoritative Fedora validation passed 15/15 dedicated tests, the 89/89 private Phase-5F regression, and the full 1337/1337 repository gate with 156 Python files formatted and strict mypy clean across 84 source files. Scored B2/B3/B4 execution remains blocked until the scorer checkpoint is committed, pushed, exact-SHA CI-proven, and formally frozen.
 
 - task correctness;
 - propagation Macro-F1;

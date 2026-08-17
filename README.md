@@ -14,13 +14,13 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
-- Last completed Phase-5F implementation milestone: **5F.3A — Corpus Contract & Capture Harness**
+- Last completed Phase-5F implementation milestone: **5F.4 — Structured Reasoner Output**
 - Frozen Phase-5F.3A corrective checkpoint: **`ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI all passed**
 - Phase-5F.3 corpus milestone: **FROZEN — attempt #4 completed the full 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1**
 - Frozen corpus-v1 archive SHA-256: **`a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`**; **36 cases / 16 empirical / 20 adversarial / 28 HARD; no scored reasoner outputs**
 - Phase-5F.4 milestone: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — private strict JSON parser/validator, exact preregistered output boundary, Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI run `32059127141` all passed; no scored output exists**
-- Current milestone: **5F.5 — Primary Metrics; implement and freeze the preregistered M1–M8 scorer before any scored B2/B3/B4 execution**
-- Validated corrective gate: **1308/1308 unit tests PASS**, **152 Python files** in the source/test format/lint scope, strict mypy over **82 source files PASS**; `research/phase5f/capture_corpus_v1.py` also passed its separate compile/Ruff/direct-mypy validation because `scripts/check.sh` intentionally excludes `research/`
+- Current milestone: **5F.5 — Primary Metrics; the private M1–M8 scorer candidate has passed authoritative Fedora validation (15/15 dedicated tests, 89/89 private Phase-5F regression, 1337/1337 full unit tests, 156-file format/lint scope, and strict mypy over 84 source files), but checkpoint/push/exact-SHA CI freeze must complete before any scored B2/B3/B4 execution**
+- Last authoritative implementation gate: **1322/1322 unit tests PASS**, **154 Python files** in the source/test format/lint scope, strict mypy over **83 source files PASS**; the frozen 5F.4 boundary is CI-proven and no scored reasoner output exists
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**
 

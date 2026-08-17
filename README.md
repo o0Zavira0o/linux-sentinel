@@ -18,7 +18,8 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen Phase-5F.3A corrective checkpoint: **`ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI all passed**
 - Phase-5F.3 corpus milestone: **FROZEN — attempt #4 completed the full 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1**
 - Frozen corpus-v1 archive SHA-256: **`a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`**; **36 cases / 16 empirical / 20 adversarial / 28 HARD; no scored reasoner outputs**
-- Current milestone: **5F.4 — Structured Reasoner Output**
+- Current milestone: **5F.4 — Structured Reasoner Output; implementation candidate Fedora-validated, repository checkpoint/CI freeze pending**
+- 5F.4 candidate: **private strict JSON parser/validator only; exact preregistered top-level fields, claim shape/causal-strength validation, no hidden chain-of-thought, no scorer/provider integration, and no scored output**
 - Validated corrective gate: **1308/1308 unit tests PASS**, **152 Python files** in the source/test format/lint scope, strict mypy over **82 source files PASS**; `research/phase5f/capture_corpus_v1.py` also passed its separate compile/Ruff/direct-mypy validation because `scripts/check.sh` intentionally excludes `research/`
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**

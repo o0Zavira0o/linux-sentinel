@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.4 — Structured Reasoner Output; 5F.3 corpus-v1 is frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18` and no scored reasoner output exists
+- Milestone: 5F.4 — Structured Reasoner Output; minimal private parse/validation implementation candidate is Fedora-validated, repository checkpoint/CI freeze is pending, 5F.3 corpus-v1 remains frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`, and no scored reasoner output exists
 
 ## Phase Overview
 
@@ -107,9 +107,9 @@ Empirical live cases must remain distinguishable from derived adversarial varian
 
 ### 5F.4 — Structured Reasoner Output
 
-Status: **ACTIVE**.
+Status: **ACTIVE — IMPLEMENTATION CANDIDATE UNDER VALIDATION**.
 
-Implement and freeze the preregistered common machine-readable final-output boundary before scored reasoner execution. Score only final machine-readable output; do not request/score hidden chain-of-thought. B2/B3/B4 remain unauthorized until the output/parse boundary is frozen.
+The candidate adds only a private strict bare-JSON parser/validator for the preregistered output fields and claim shape. It rejects structural/JSON ambiguity without semantic repair, while leaving abstention correctness, unsupported claims, citation quality, provenance validity, and counterevidence handling independently scoreable. No scoring, provider integration, or prompt execution is part of 5F.4. Authoritative Fedora validation has passed; freeze still requires repository/stage guards, commit/push, and green exact-SHA CI. B2/B3/B4 remain unauthorized until then.
 
 ### 5F.5 — Primary Metrics
 

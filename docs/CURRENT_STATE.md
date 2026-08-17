@@ -3,10 +3,11 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **5F.3 FROZEN — corpus-v1 capture/audit/freeze complete; 5F.4 ACTIVE — Structured Reasoner Output**
+- Status: **5F.3 FROZEN — corpus-v1 capture/audit/freeze complete; 5F.4 ACTIVE — Structured Reasoner Output implementation candidate Fedora-validated, repository checkpoint/CI freeze pending**
 - Last updated: 2026-08-17
 - Last completed implementation milestone: Phase 5F.3A — Corpus Contract & Capture Harness
 - Last completed research-artifact milestone: Phase 5F.3B — Live Corpus Capture & Freeze
+- Phase-5F.3B closure / Phase-5F.4 activation checkpoint: `5be2e1f8d14c6ed2d235a7b34473a857952fe111`
 - Capture/freeze authority repository checkpoint: `64cffbe48c4a919752d68edae19f6a763295eb6e`
 - Frozen Phase-5F.3A corrective implementation checkpoint: `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`
 - Last verified repository checkpoint before 5F.3A: `295a57975253441dc4e2a18290ce5043a57e938a`
@@ -89,6 +90,8 @@ Phase-5F.3B is now complete. The authoritative campaign ran from repository chec
 The first Gate-3 operator audit attempt produced a false-positive failure because the audit command looked for `statistical_no_effect_claim` instead of the frozen serialized key `statistical_no-effect_claim`. A read-only root-cause check confirmed the corpus bytes were correct; the corrected full audit then passed without recapture, rewrite, or re-export.
 
 `research/phase5f/CORPUS_V1_CAPTURE.md` is retained byte-for-byte as the pre-score execution protocol. Its historical top-line corrective-status wording is not rewritten after observing the successful live result; this document and the Phase-5 status document carry the authoritative post-capture completion state.
+
+Phase-5F.4 now has a minimal implementation candidate in the private `_phase5f` boundary: strict bare-JSON parsing plus exact validation of `classification`, independent `abstain`, `claims`, `unresolved`, and top-level `evidence_refs`. Claim validation covers `claim_kind`, the frozen causal-strength vocabulary, claim-local evidence references, and claim text. The parser rejects duplicate JSON keys, non-standard JSON constants, prose/code fences, schema extras, malformed evidence references, and duplicate references without performing semantic repair. It deliberately does **not** infer abstention from classification, require evidence on every claim, or resolve reference validity against hidden gold, because those failures must remain observable to the preregistered metrics. No scorer, provider integration, prompt runner, or scored reasoner output has been added. Authoritative Fedora validation is complete: the 14 dedicated 5F.4 tests and 74-test private Phase-5F regression pass, documentation integrity passes, and the full quality gate reports 154 Python files already formatted, Ruff clean, strict mypy clean across 83 source files, and 1322/1322 unit tests passing. The implementation checkpoint is not frozen until repository/stage guards, commit/push, and exact-SHA green CI complete.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -181,9 +184,9 @@ Status: **FROZEN**.
 **5F.3B — Live Corpus Capture & Freeze: FROZEN.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` exposed the reverse/counterevidence live-shape assumption. The third attempt on `7f405633d104bc1360a10d066dd75ebb8d027fbe` exposed the multiple-candidate hidden-gold assumption. Both failed before valid corpus freeze and produced no score. The third corrective implementation at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` was then frozen, and the repository state was advanced to CI-proven capture authority `64cffbe48c4a919752d68edae19f6a763295eb6e`. Fresh attempt #4 restarted all empirical executions, captured 16 empirical cases, derived 20 adversarial cases, passed the frozen internal corpus audit and an independent exported-artifact audit, and froze the exact archive before any scoring. Frozen archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; preserved attempt log SHA-256: `5391a3014643c6bfc352c46e60b32b98ebb1a1985587531b641ff5c7913a1128`; capture boot: `4ff955e4421e487b946423c40beb713c`. `scored_reasoner_outputs_present=False`.
 
 ### 5F.4 — Structured Reasoner Output
-Status: **ACTIVE**.
+Status: **ACTIVE — IMPLEMENTATION CANDIDATE UNDER VALIDATION**.
 
-Next work is limited to implementing/freezing the preregistered common machine-readable final-output boundary (`classification`, `abstain`, `claims`, `unresolved`, `evidence_refs`) and its parse/validation contract. Do not run scored B2/B3/B4 evaluations until this boundary and its validation are frozen.
+A minimal private parser/validator candidate now implements the preregistered common machine-readable final-output boundary (`classification`, `abstain`, `claims`, `unresolved`, `evidence_refs`) without touching frozen baseline behavior or hidden gold. Validation intentionally preserves independently scoreable semantic failures: abstention is not derived from classification; uncited claims remain parse-valid; well-formed but wrong evidence references remain parse-valid for later citation/provenance scoring. Next work is Fedora validation, exact workset guards, commit/push/CI, and freeze of this boundary. Do not run scored B2/B3/B4 evaluations until that freeze completes.
 
 ## Frozen FULL Reference and Repository Checkpoints
 
@@ -191,6 +194,7 @@ Next work is limited to implementing/freezing the preregistered common machine-r
 - Frozen Phase-5F.2 repository checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
 - Frozen Phase-5F.3A corrective implementation checkpoint: `ff0faa29dc0378263e84dcfbe74f5d46067a7f38`
 - Phase-5F.3B capture/freeze authority checkpoint: `64cffbe48c4a919752d68edae19f6a763295eb6e`
+- Phase-5F.3B closure / 5F.4 activation checkpoint: `5be2e1f8d14c6ed2d235a7b34473a857952fe111`
 - Frozen corpus-v1 archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`
 - Branch: `sentinel-x-phase1`
 - Date: 2026-08-17

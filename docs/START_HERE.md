@@ -105,7 +105,7 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. implement and freeze the 5F.4 common structured final-output/parse boundary required by the preregistered evaluation protocol;
+1. freeze the Fedora-validated minimal 5F.4 strict JSON final-output/parse candidate through repository guards, commit/push, and exact-SHA CI without adding scoring/provider/prompt execution;
 2. only after 5F.4 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
 3. score the preregistered primary metrics and HARD/full-corpus analyses without changing frozen criteria;
 4. perform required Full-vs-Minimal and field ablations;
@@ -167,4 +167,4 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 - Phase: 5F.4 structured reasoner output
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: 5F.3B attempt #4 completed the full live capture/audit/freeze path; corpus-v1 archive SHA-256 is `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; activate 5F.4 with no scored reasoner output yet
+- Update reason: 5F.3B is frozen and closure/5F.4 activation commit `5be2e1f8d14c6ed2d235a7b34473a857952fe111` is CI-proven; the minimal private 5F.4 strict JSON parser/validator candidate has passed authoritative Fedora validation and now awaits repository checkpoint/CI freeze, with no scorer/provider integration and no scored reasoner output

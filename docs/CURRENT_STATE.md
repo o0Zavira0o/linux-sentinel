@@ -3,10 +3,10 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **ACTIVE — 5F.3 blind falsification corpus**
-- Last updated: 2026-08-16
-- Last completed implementation milestone: Phase 5F.2 — Deterministic Baselines
-- Last verified implementation commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
+- Status: **ACTIVE — 5F.3B live corpus capture, lineage audit, and corpus freeze**
+- Last updated: 2026-08-17
+- Last completed implementation milestone: Phase 5F.3A — Corpus Contract & Capture Harness
+- Last verified repository checkpoint before 5F.3A: `295a57975253441dc4e2a18290ce5043a57e938a`
 - Branch: `sentinel-x-phase1`
 
 ## Completed Capabilities
@@ -78,6 +78,8 @@ unit tests: 1285 total
 ```
 
 The 5F.2 gate validates implementation integrity only; the deterministic baselines have not yet been scored on the frozen falsification corpus.
+
+Phase-5F.3A adds corpus contracts/transformations plus an operator-only capture harness. Its commit is eligible only after Fedora confirms the expected 1303-test / 151-format-scope / 82-source-mypy gate and separate compile/Ruff validation of `research/phase5f/capture_corpus_v1.py`. 5F.3A itself produces no corpus and no score; 5F.3B performs the real live campaign.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -164,14 +166,16 @@ Status: **FROZEN**.
 Implemented three private function-only comparators on the 5F.1 boundary: B0 intentionally naive state/rule logic; B1 requirement-graph + monotonic-time + boot + bounded-coverage reasoning over MINIMAL factual evidence; and B1S conservative mapping of the existing frozen synthesis serialization. No benchmark score or value claim is assigned by this milestone.
 
 ### 5F.3 — Blind Falsification Corpus
-Status: **CURRENT MILESTONE**.
+Status: **ACTIVE**.
 
-Build the preregistered empirical and adversarial case corpus, preserve source-run grouping, enforce RAW/MINIMAL/FULL lineage for each opaque case, and freeze transformation/capture rules before scored reasoner output is inspected.
+**5F.3A — Corpus Contract & Capture Harness: FROZEN after successful repository validation/CI.** The code defines the exact 36-case plan, hidden lineage/gold provenance, five deterministic adversarial transformations, atomic corpus export, bounded read-only sidecar contract, observer pilot, and operator-only live harness. No scored output is generated.
+
+**5F.3B — Live Corpus Capture & Freeze: CURRENT.** Run the frozen harness on Fedora, require one boot across pilot/campaign, capture 16 distinct empirical runs in the frozen order, derive 20 adversarial cases, audit same-case RAW/MINIMAL/FULL lineage and source-run grouping, archive/hash the corpus, then freeze it before any reasoner scoring.
 
 ## Frozen FULL Reference and Repository Checkpoints
 
 - FULL Phase-5E.4 reference commit: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
-- Last completed repository checkpoint before 5F.2: `5d98262c8fb1d03d8e6aa5b9e2da1509723eaea6`
+- Frozen Phase-5F.2 repository checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
 - Branch: `sentinel-x-phase1`
 - Date: 2026-08-16
 

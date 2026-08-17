@@ -22,9 +22,10 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
-- Current milestone: **5F.3 — Blind Falsification Corpus**
-- Last completed implementation milestone: **Phase 5F.2 — Deterministic Baselines**
-- Next milestone after 5F.3: **5F.4 — Structured Reasoner Output**
+- Phase 5F.3A: **FROZEN — corpus contract, transformations, and capture harness established**
+- Current milestone: **5F.3B — Live Corpus Capture & Freeze**
+- Last completed implementation milestone: **Phase 5F.3A — Corpus Contract & Capture Harness**
+- Next milestone after 5F.3 corpus freeze: **5F.4 — Structured Reasoner Output**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
 ## What Currently Works
@@ -102,7 +103,7 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. build the blinded falsification corpus while keeping empirical live cases and adversarial derived cases distinct;
+1. execute the frozen 5F.3A capture protocol to build corpus-v1 while keeping 16 empirical live cases and 20 adversarial derived cases distinct;
 2. enforce same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic transformation provenance before scoring;
 3. execute isolated RAW/MINIMAL/FULL reasoner comparisons only after the corpus is frozen;
 4. score preregistered primary metrics and ablations;
@@ -135,8 +136,9 @@ After this file read:
 7. [`TECH_DEBT.md`](TECH_DEBT.md)
 8. [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md)
 9. [`phases/PHASE-05-EVIDENCE-AND-FALSIFICATION.md`](phases/PHASE-05-EVIDENCE-AND-FALSIFICATION.md)
-10. [`../research/phase5f/THESIS.md`](../research/phase5f/THESIS.md) before any Phase-5F benchmark implementation
-11. relevant ADRs from [`adr/README.md`](adr/README.md)
+10. [`../research/phase5f/THESIS.md`](../research/phase5f/THESIS.md) and the other frozen Phase-5F preregistration documents
+11. [`../research/phase5f/CORPUS_V1_CAPTURE.md`](../research/phase5f/CORPUS_V1_CAPTURE.md) for the active 5F.3B live corpus campaign
+12. relevant ADRs from [`adr/README.md`](adr/README.md)
 
 For work touching earlier phases, read that phase document before changing code.
 
@@ -159,8 +161,8 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 
 ## Last Updated
 
-- Date: 2026-08-16
-- Phase: 5F.3
+- Date: 2026-08-17
+- Phase: 5F.3B
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
-- Last completed repository checkpoint before 5F.2: `5d98262c8fb1d03d8e6aa5b9e2da1509723eaea6`
-- Update reason: Phase-5F.2 deterministic comparators completed; transition to blind corpus construction
+- Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
+- Update reason: corpus-v1 contracts, deterministic transformations, and operator capture harness frozen; transition to live corpus capture/audit

@@ -160,9 +160,13 @@ Status: **FROZEN**.
 Implemented function-only private comparators without changing frozen `dependency/`: B0 maps dependent service state while intentionally ignoring topology/timing/provenance/coverage; B1 uses MINIMAL factual scope, requirement reachability, monotonic source/target transitions, boot compatibility, ambiguity, and bounded healthy coverage; B1S validates current synthesis schema/count/interpretation claim boundaries and maps it conservatively to common benchmark labels. Forward temporal consistency alone remains `INSUFFICIENT`, not an observed effect. No scored comparison or value claim is assigned by 5F.2.
 
 ### 5F.3 — Blind Corpus
-Status: **CURRENT MILESTONE**.
+Status: **ACTIVE**.
 
-Build empirical live cases plus separated adversarial cases covering positive, bounded negative, insufficient, counterevidence, topology/no-effect, temporal distractor, invalid provenance, and multi-candidate ambiguity. Same-case RAW/MINIMAL/FULL lineage, source-run grouping, and deterministic adversarial transformation provenance must be frozen before scored outputs.
+**5F.3A — Corpus Contract & Capture Harness: FROZEN after successful validation/CI.** Private corpus modules define the exact 36 opaque case IDs, 16-run empirical execution order, hidden `source_run_group`, same-case lineage audit, separated visible/hidden export, and five deterministic adversarial transformations. The operator-only capture harness reuses the frozen 5E.4 bound runner, adds bounded read-only systemctl/journal sidecar evidence, performs a four-run observer pilot, enforces a single boot for the campaign, and emits a hashed corpus archive. Transformations that invalidate parent assumptions strip stale FULL derived records. No reasoner is run and no score is computed by 5F.3A.
+
+**5F.3B — Live Corpus Capture & Freeze: CURRENT.** Execute the frozen harness on Fedora, require 8 Requires effect cases + 8 Wants bounded-negative cases, derive 20 adversarial cases, audit 36/16/20/28 counts and lineage/source-group invariants, archive/hash the result, and freeze corpus-v1 before 5F.4.
+
+Execution protocol: [`../../research/phase5f/CORPUS_V1_CAPTURE.md`](../../research/phase5f/CORPUS_V1_CAPTURE.md).
 
 ### 5F.4–5F.6
 Structured final outputs, preregistered scoring, Full-vs-Minimal and field ablations.

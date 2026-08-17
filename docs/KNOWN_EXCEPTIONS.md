@@ -64,4 +64,16 @@ This is intentional in 5F.1: domain-specific lineage construction/validation bel
 
 **Do not infer:** successful 5F.1 unit tests prove benchmark-view equivalence for real captured incidents.
 
-**Removal condition:** empirical/adversarial corpus construction establishes preregistered same-case lineage validation before scored reasoner runs.
+**Removal condition:** 5F.3B captures and audits the real corpus-v1 archive; 5F.3A establishes the lineage contract but does not yet prove semantic equivalence for the live corpus.
+
+## EXC-012 — Phase-5F.3 RAW sidecar is evaluation-only operator instrumentation
+
+`research/phase5f/capture_corpus_v1.py` adds bounded read-only `systemctl show` and `journalctl` capture around the frozen 5E.4 protocol-bound runner. It is intentionally outside the production package and does not become a new observability collector. A four-run observer pilot (Requires/Wants, with/without sidecar) gates the campaign only on qualitative evidence-class stability, bounded frozen-run sampling, recovery, error-free sidecar capture, and one boot.
+
+**Do not infer:** `material_observer_effect_detected=False` is a statistical proof of zero observer effect. It is only the preregistered material-effect gate for corpus-v1.
+
+## EXC-013 — Adversarial corpus cases are deterministic derivatives, not empirical replications
+
+The 20 adversarial cases inherit their empirical parent `source_run_group`. Insufficient/reverse/multiple-candidate transformations remove stale FULL controlled/synthesis records when the transformed evidence no longer satisfies those records' assumptions. Temporal-distractor and cross-boot transforms preserve valid parent FULL evidence because the original evidence itself is unchanged.
+
+**Do not infer:** 36 scored cases represent 36 independent live experiments.

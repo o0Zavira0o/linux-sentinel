@@ -198,11 +198,14 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 
 **Purpose:** private evaluation-only support for the Phase-5F falsification benchmark.
 
-**Current scope (through 5F.2):**
+**Current scope (through 5F.3A):**
 - `visible.py` owns one immutable gold-free `CaseSource` and the RAW/MINIMAL/FULL projection function;
 - `gold.py` owns hidden scorer-only `CaseGold` and is deliberately not re-exported by the package root;
 - `_common.py` contains only shared opaque case/reference validation primitives;
-- `baselines.py` owns three function-only deterministic comparators: B0 state rule, B1 Graph+Time, and B1S projection of the existing frozen synthesis serialization.
+- `baselines.py` owns three function-only deterministic comparators: B0 state rule, B1 Graph+Time, and B1S projection of the existing frozen synthesis serialization;
+- `corpus.py` owns the private `CorpusCase` contract, frozen case plan, lineage audit, hidden/visible separation, and atomic corpus export;
+- `corpus_empirical.py` binds one frozen protocol-bound live execution plus bounded read-only sidecar evidence into an empirical case;
+- `corpus_transformations.py` owns the five frozen deterministic adversarial transformations and explicitly removes stale FULL derived evidence when a transformation invalidates its parent assumptions.
 
 **Key invariants:**
 - all three evidence conditions originate from one `CaseSource`;
@@ -214,7 +217,10 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 - no new content-addressed identity family, Protocol hierarchy, result class, or public Sentinel-X API is introduced;
 - B0 intentionally ignores topology, timing, boot provenance, and coverage so it remains a genuinely small comparator;
 - B1 uses only MINIMAL factual scope/topology/timeline/coverage/boot facts and supports requirement-edge reachability without consuming current synthesis;
-- B1S consumes only FULL current-synthesis serialization and does not upgrade forward temporal consistency alone into an observed effect.
+- B1S consumes only FULL current-synthesis serialization and does not upgrade forward temporal consistency alone into an observed effect;
+- corpus-v1 keeps hidden gold/provenance physically separate from visible RAW/MINIMAL/FULL JSONL exports;
+- derived adversarial variants inherit their empirical parent `source_run_group` and therefore are not independent empirical replications;
+- `research/phase5f/capture_corpus_v1.py` is an operator-only evaluation harness: it reuses the frozen 5E.4 mutation runner and adds only bounded read-only `systemctl show` / `journalctl` sidecar capture.
 
 `CaseGold` is a hidden benchmark/scoring artifact, not operational diagnosis truth and not a reasoner-visible object.
 

@@ -14,9 +14,9 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
-- Completed Phase-5F milestone: **5F.2 — Deterministic Baselines**
-- Current milestone: **5F.3 — Blind Falsification Corpus**
-- Last authoritative Fedora quality gate after Phase 5F.2: **1285 / 1285 unit tests**, 147 Python files formatted, strict mypy over 79 source files
+- Completed Phase-5F milestone: **5F.3A — Corpus Contract & Capture Harness**
+- Current milestone: **5F.3B — Live Corpus Capture & Freeze**
+- Expected 5F.3A completion gate after Fedora validation: **1303 unit tests**, 151 Python files in the source/test format scope, strict mypy over 82 source files; the operator capture script is validated separately because `scripts/check.sh` intentionally excludes `research/`
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**
 
@@ -74,7 +74,7 @@ These are intentionally visible unknowns rather than hidden claims.
 
 ## Phase 5F — Falsification
 
-Phase 5F compares the same blinded cases using:
+Phase 5F first freezes a 36-case corpus (16 empirical controlled executions plus 20 deterministic adversarial derivatives) and then compares the same blinded cases using:
 
 - B0: state/rule baseline;
 - B1: simple graph + time heuristic;

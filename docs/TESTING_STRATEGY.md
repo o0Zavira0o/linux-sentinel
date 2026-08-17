@@ -54,6 +54,8 @@ Phase-5F.1 adds targeted projection/leakage tests. Its completion baseline is 12
 
 Phase-5F.2 adds deterministic baseline semantics without Linux mutation: B0 intentionally ignores topology/provenance/coverage; B1 exercises boot-scoped requirement reachability, forward/reverse timing, ambiguity, distractors, and bounded healthy coverage; B1S validates and conservatively projects frozen synthesis serialization. Its completion baseline is 1285 total unit tests with 147 Python files under format/lint scope and 79 source files under strict mypy.
 
+Phase-5F.3A adds private corpus/lineage/export contracts, empirical binding, five deterministic adversarial transformations, and an operator-only research capture harness. Expected completion baseline is 1303 total unit tests with 151 Python files under the source/test format/lint scope and 82 source files under strict package mypy. Because `scripts/check.sh` does not include `research/`, `research/phase5f/capture_corpus_v1.py` requires separate compile and Ruff checks before freeze. No live proof is needed to commit 5F.3A; the entire purpose of 5F.3B is to execute the frozen harness and produce the real corpus.
+
 ## Mandatory Validation by Change Type
 
 ### Documentation-only
@@ -76,7 +78,7 @@ Above + real Fedora smoke/integration proof when behavior changed.
 Above + controlled live proof with explicit mutation/cleanup/recovery.
 
 ### Phase-5F evaluation code
-- tests for leakage, projection equivalence/scope, scoring, baseline semantics;
+- tests for leakage, projection equivalence/scope, scoring, baseline semantics, corpus lineage, transform determinism, hidden/visible separation, source-run grouping, and atomic corpus export;
 - no new public API unless separately approved;
 - verify hidden labels never enter visible projection;
 - preregistration remains frozen after scored-result inspection except versioned invalidation/result reporting.

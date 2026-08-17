@@ -38,7 +38,8 @@ Never resolve contradictions silently. Report them.
 - Phase 5F.0: **FROZEN — preregistration baseline established**
 - Phase 5F.1: **FROZEN — blinded projection boundary established**
 - Phase 5F.2: **FROZEN — deterministic baselines established**
-- Active milestone: **5F.3 — Blind Falsification Corpus**
+- Phase 5F.3A: **FROZEN — corpus contract, transformations, and capture harness established**
+- Active milestone: **5F.3B — live corpus capture, lineage audit, and corpus freeze**
 
 The previous post-5E.4 feature-growth plan is superseded.
 
@@ -129,6 +130,7 @@ Before scored benchmark results are inspected:
 - freeze non-goals;
 - freeze corpus rules;
 - freeze baselines;
+- freeze the corpus-v1 capture/derivation protocol before any scored reasoner output;
 - freeze primary metrics;
 - freeze decision thresholds;
 - freeze kill criteria.

@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.3 — Blind Falsification Corpus
+- Milestone: 5F.3B — Live Corpus Capture & Freeze
 
 ## Phase Overview
 
@@ -86,9 +86,13 @@ Later 5F milestones execute:
 
 ### 5F.3 — Blind Falsification Corpus
 
-Status: **ACTIVE — current milestone**.
+Status: **ACTIVE**.
 
-Must include multiple cases of:
+**5F.3A — Corpus Contract & Capture Harness: FROZEN after successful validation/CI.** It freezes case IDs/order, transformation semantics, source-run grouping, hidden/visible export separation, read-only sidecar bounds, observer pilot, and the operator capture harness. It does not run scored reasoners.
+
+**5F.3B — Live Corpus Capture & Freeze: CURRENT.** Execute the frozen harness on Fedora, audit the resulting archive, and freeze corpus-v1 before 5F.4.
+
+Corpus-v1 must include multiple cases of:
 
 - clear observed effect;
 - bounded negative evidence;
@@ -99,7 +103,7 @@ Must include multiple cases of:
 - invalid provenance/cross-boot distractor;
 - multiple-candidate ambiguity.
 
-Empirical live cases must remain distinguishable from derived adversarial variants.
+Empirical live cases must remain distinguishable from derived adversarial variants. Derived variants inherit the parent source-run group and are never counted as independent empirical replications. Transformations that invalidate the parent evidence assumptions must remove stale FULL derived records rather than rewriting them into answer-like evidence.
 
 ### 5F.4 — Structured Reasoner Output
 

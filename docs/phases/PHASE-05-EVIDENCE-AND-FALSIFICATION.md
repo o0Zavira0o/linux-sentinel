@@ -169,12 +169,17 @@ Status: **FROZEN**.
 Execution protocol: [`../../research/phase5f/CORPUS_V1_CAPTURE.md`](../../research/phase5f/CORPUS_V1_CAPTURE.md). The protocol file is retained unchanged after the successful campaign; its historical corrective-status header is not a current milestone indicator and is intentionally not rewritten post hoc.
 
 ### 5F.4 — Structured Reasoner Output
-Status: **ACTIVE — IMPLEMENTATION CANDIDATE UNDER VALIDATION**.
+Status: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`**.
 
-A minimal private candidate now implements strict bare-JSON parsing and exact validation for the preregistered final output: classification, independent abstention, claims with causal strength/evidence references/text, unresolved items, and top-level evidence references. It rejects duplicate JSON keys, non-standard constants, prose/code fences, schema extras, malformed/duplicate reference syntax, and invalid causal-strength labels without importing hidden gold or scoring policy. It deliberately does not infer abstention from classification, require citations on claims, or reject well-formed references merely because they are unsupported/wrong-scope; those remain independently measurable failures for later frozen scoring. Frozen B0/B1/B1S behavior is untouched. No scored B2/B3/B4 run is authorized until Fedora validation, commit/push/CI, and freeze of this output/parse boundary are complete.
+The minimal private implementation performs strict bare-JSON parsing and exact validation for the preregistered final output: classification, independent abstention, claims with causal strength/evidence references/text, unresolved items, and top-level evidence references. It rejects duplicate JSON keys, non-standard constants, prose/code fences, schema extras, malformed/duplicate reference syntax, and invalid causal-strength labels without importing hidden gold or scoring policy. It deliberately does not infer abstention from classification, require citations on claims, or reject well-formed references merely because they are unsupported/wrong-scope; those remain independently measurable failures for later frozen scoring. Frozen B0/B1/B1S behavior is untouched. Fedora validation, exact repository/stage guards, commit/push, local/remote equality, clean-repository verification, and four-job exact-SHA CI run `32059127141` all passed. No scored B2/B3/B4 output exists.
 
-### 5F.5–5F.6
-Preregistered scoring, Full-vs-Minimal comparison, and required field ablations remain pending.
+### 5F.5 — Primary Metrics
+Status: **ACTIVE — SCORER IMPLEMENTATION / FREEZE BEFORE SCORED OUTPUTS**.
+
+Implement the preregistered M1–M8 metrics and analysis aggregation boundaries from `research/phase5f/METRICS.md` without changing thresholds or benchmark-validity rules after results. This scorer boundary must be validated and frozen before scored B2/B3/B4 execution.
+
+### 5F.6 — Ablation
+The preregistered Full-vs-Minimal comparison and required field ablations remain pending.
 
 ### 5F.7 — Decision
 Must choose A/B/C/D/E verdict.

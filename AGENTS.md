@@ -40,7 +40,8 @@ Never resolve contradictions silently. Report them.
 - Phase 5F.2: **FROZEN — deterministic baselines established**
 - Phase 5F.3A: **CORRECTIVE CHECKPOINT FROZEN — the third live-discovered multiple-candidate hidden-gold/live-shape correction is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` after Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and green four-job CI**
 - Phase 5F.3B: **FROZEN — authoritative attempt #4 captured 16 empirical cases, derived 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
-- Active milestone: **5F.4 — Structured Reasoner Output; the minimal private JSON parse/validation candidate implements the preregistered final-output boundary and has passed authoritative Fedora validation, but repository checkpoint/CI freeze remain required before any scored B2/B3/B4 run**
+- Phase 5F.4: **FROZEN — structured reasoner output boundary frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` after Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and green four-job CI run `32059127141`; no scored reasoner output exists**
+- Active milestone: **5F.5 — Primary Metrics; implement and freeze the preregistered M1–M8 scoring boundary before any scored B2/B3/B4 run**
 
 The previous post-5E.4 feature-growth plan is superseded.
 

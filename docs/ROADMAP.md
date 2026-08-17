@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.4 — Structured Reasoner Output; minimal private parse/validation implementation candidate is Fedora-validated, repository checkpoint/CI freeze is pending, 5F.3 corpus-v1 remains frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`, and no scored reasoner output exists
+- Milestone: 5F.5 — Primary Metrics; 5F.4 Structured Reasoner Output is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` with green exact-SHA CI run `32059127141`, corpus-v1 remains frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`, and no scored reasoner output exists
 
 ## Phase Overview
 
@@ -107,11 +107,15 @@ Empirical live cases must remain distinguishable from derived adversarial varian
 
 ### 5F.4 — Structured Reasoner Output
 
-Status: **ACTIVE — IMPLEMENTATION CANDIDATE UNDER VALIDATION**.
+Status: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`**.
 
-The candidate adds only a private strict bare-JSON parser/validator for the preregistered output fields and claim shape. It rejects structural/JSON ambiguity without semantic repair, while leaving abstention correctness, unsupported claims, citation quality, provenance validity, and counterevidence handling independently scoreable. No scoring, provider integration, or prompt execution is part of 5F.4. Authoritative Fedora validation has passed; freeze still requires repository/stage guards, commit/push, and green exact-SHA CI. B2/B3/B4 remain unauthorized until then.
+The private strict bare-JSON parser/validator implements the preregistered output fields and claim shape, rejects structural/JSON ambiguity without semantic repair, and leaves abstention correctness, unsupported claims, citation quality, provenance validity, and counterevidence handling independently scoreable. Fedora validation, exact repository/stage guards, commit/push, local/remote equality, clean-repository verification, and four-job exact-SHA CI run `32059127141` all passed. No scoring, provider integration, prompt execution, or scored reasoner output was added by 5F.4.
 
 ### 5F.5 — Primary Metrics
+
+Status: **ACTIVE — IMPLEMENT AND FREEZE SCORING BEFORE SCORED REASONER OUTPUTS**.
+
+Implement the preregistered M1–M8 scorer and analysis aggregation boundaries before B2/B3/B4 execution. The frozen metric definitions, thresholds, HARD/full analysis sets, and benchmark-validity rules are not reopened.
 
 - task correctness;
 - propagation Macro-F1;

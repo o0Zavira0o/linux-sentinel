@@ -24,8 +24,9 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.2: **FROZEN — deterministic baselines established**
 - Phase 5F.3A: **THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — dedicated, Phase-5F, full-project, research-harness static, exact repository/content, push/remote-equality, clean-repository, and four-job CI guards all passed**
 - Phase 5F.3B: **FROZEN — attempt #4 completed the fresh 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
-- Current milestone: **5F.4 — Structured Reasoner Output**
-- Last completed implementation milestone: **Phase 5F.3A — Corpus Contract & Capture Harness**
+- Phase 5F.4: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — structured reasoner output boundary passed Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and four-job CI run `32059127141`; no scored output exists**
+- Current milestone: **5F.5 — Primary Metrics**
+- Last completed implementation milestone: **Phase 5F.4 — Structured Reasoner Output**
 - Last completed research-artifact milestone: **Phase 5F.3B — Live Corpus Capture & Freeze**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
@@ -105,9 +106,9 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. freeze the Fedora-validated minimal 5F.4 strict JSON final-output/parse candidate through repository guards, commit/push, and exact-SHA CI without adding scoring/provider/prompt execution;
-2. only after 5F.4 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
-3. score the preregistered primary metrics and HARD/full-corpus analyses without changing frozen criteria;
+1. implement and freeze the preregistered 5F.5 M1–M8 scoring/aggregation boundary before inspecting scored B2/B3/B4 results;
+2. only after 5F.5 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
+3. report preregistered HARD/full-corpus, empirical/adversarial, scenario-family, and repeat/condition analyses without changing frozen criteria;
 4. perform required Full-vs-Minimal and field ablations;
 5. issue one required Phase-5F verdict;
 6. only if the thesis survives, perform Phase 5R deletion-first reduction.
@@ -164,7 +165,7 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-17
-- Phase: 5F.4 structured reasoner output
+- Phase: 5F.5 primary metrics
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: 5F.3B is frozen and closure/5F.4 activation commit `5be2e1f8d14c6ed2d235a7b34473a857952fe111` is CI-proven; the minimal private 5F.4 strict JSON parser/validator candidate has passed authoritative Fedora validation and now awaits repository checkpoint/CI freeze, with no scorer/provider integration and no scored reasoner output
+- Update reason: 5F.4 Structured Reasoner Output is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`; exact-SHA GitHub Actions run `32059127141` passed across Python 3.11–3.14 with local/remote equality and a clean repository. 5F.5 Primary Metrics is now active; no scored B2/B3/B4 output exists, and scorer implementation/freeze must precede scored execution.

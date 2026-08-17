@@ -147,15 +147,48 @@ def _derive_reverse(parent: CorpusCase, case_id: str) -> CorpusCase:
         raise ValueError("reverse parent must be empirical effect")
     items, lineage = _mutable_case(parent.source, parent.lineage_by_ref)
     source_item = _timeline_item(items, unit_role="source")
-    target_item = _timeline_item(items, unit_role="target")
+    source_payload = cast(dict[str, object], source_item["minimal"])
     source_time = _required_nonnegative_int(
-        cast(dict[str, object], source_item["minimal"]),
+        source_payload,
         "transition_monotonic_usec",
     )
     reversed_time = max(0, source_time - 100_000)
-    for view in ("minimal", "full"):
-        payload = cast(dict[str, object], target_item[view])
-        payload["transition_monotonic_usec"] = reversed_time
+
+    target_item = _optional_timeline_item(items, unit_role="target")
+    target_timeline_synthesized = target_item is None
+    if target_item is None:
+        scope_item = _single_payload_item(items, "scope", "minimal")
+        scope_payload = cast(dict[str, object], scope_item["minimal"])
+        target_unit = _required_text(scope_payload, "target_unit")
+        boot_id = _required_text(source_payload, "boot_id")
+        observation_item = _single_payload_item(items, "observation", "minimal")
+        observation_payload = cast(dict[str, object], observation_item["minimal"])
+        if _required_text(observation_payload, "unit") != target_unit:
+            raise ValueError("reverse parent target observation does not match scope")
+        target_state = _required_text(observation_payload, "status")
+        if target_state not in {"inactive", "failed"}:
+            raise ValueError("reverse parent requires an observed target anomaly")
+        target_ref = _next_ref(items)
+        target_timeline = {
+            "unit": target_unit,
+            "state": target_state,
+            "transition_monotonic_usec": reversed_time,
+            "boot_id": boot_id,
+        }
+        target_item = {
+            "ref": target_ref,
+            "kind": "incident_timeline",
+            "minimal": dict(target_timeline),
+            "full": dict(target_timeline),
+        }
+        items.append(target_item)
+    else:
+        target_ref = cast(str, target_item["ref"])
+        for view in ("minimal", "full"):
+            payload = cast(dict[str, object], target_item[view])
+            payload["transition_monotonic_usec"] = reversed_time
+
+    lineage[target_ref] = f"derived:{case_id}:reverse-target-timeline"
     raw_item = _single_payload_item(items, "systemctl_samples", "raw")
     raw_payload = cast(dict[str, object], raw_item["raw"])
     raw_samples = raw_payload.get("samples")
@@ -204,7 +237,6 @@ def _derive_reverse(parent: CorpusCase, case_id: str) -> CorpusCase:
     _drop_invalidated_full_records(items, lineage)
     source = _rebuild_source(parent.source, case_id, items)
     source_ref = cast(str, source_item["ref"])
-    target_ref = cast(str, target_item["ref"])
     gold = _derived_gold(
         parent,
         case_id=case_id,
@@ -225,6 +257,9 @@ def _derive_reverse(parent: CorpusCase, case_id: str) -> CorpusCase:
             "operation": "move_target_anomaly_before_source_transition",
             "source_transition_usec": source_time,
             "derived_target_transition_usec": reversed_time,
+            "target_timeline_synthesized_from_observed_anomaly": (
+                target_timeline_synthesized
+            ),
             "raw_journal_removed_to_avoid_stale_forward_timing": True,
             "stale_full_derived_records_removed": True,
         },
@@ -566,6 +601,25 @@ def _single_payload_item(
     if len(matched) != 1:
         raise ValueError(f"expected exactly one {kind} item with {view} payload")
     return matched[0]
+
+
+def _optional_timeline_item(
+    items: list[dict[str, object]], *, unit_role: str
+) -> dict[str, object] | None:
+    scope = _single_payload_item(items, "scope", "minimal")
+    scope_payload = cast(dict[str, object], scope["minimal"])
+    field = "source_unit" if unit_role == "source" else "target_unit"
+    unit = _required_text(scope_payload, field)
+    matched: list[dict[str, object]] = []
+    for item in items:
+        if item.get("kind") != "incident_timeline" or "minimal" not in item:
+            continue
+        payload = cast(dict[str, object], item["minimal"])
+        if payload.get("unit") == unit:
+            matched.append(item)
+    if len(matched) > 1:
+        raise ValueError(f"expected at most one {unit_role} incident_timeline item")
+    return matched[0] if matched else None
 
 
 def _timeline_item(

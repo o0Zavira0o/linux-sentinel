@@ -419,6 +419,78 @@ class Phase5FCorpusTests(unittest.TestCase):
         )
         self.assertNotIn("REF-0011", derived.lineage_by_ref)
 
+    def test_reverse_transform_synthesizes_target_timeline_when_pairwise_is_absent(
+        self,
+    ) -> None:
+        original = self._empirical("CASE-0001", effect=True)
+        source = CaseSource(
+            case_id=original.source.case_id,
+            task=original.source.task,
+            environment=original.source.environment,
+            evidence_items=tuple(
+                item
+                for item in original.source.evidence_items
+                if item["ref"] != "REF-0004"
+            ),
+        )
+        gold = CaseGold(
+            case_id=original.gold.case_id,
+            classification=original.gold.classification,
+            must_abstain=original.gold.must_abstain,
+            supporting_evidence_refs=tuple(
+                ref
+                for ref in original.gold.supporting_evidence_refs
+                if ref != "REF-0004"
+            ),
+            invalid_evidence_refs=original.gold.invalid_evidence_refs,
+            counterevidence_refs=original.gold.counterevidence_refs,
+            maximum_allowed_causal_strength=(
+                original.gold.maximum_allowed_causal_strength
+            ),
+            origin=original.gold.origin,
+            source_run_group=original.gold.source_run_group,
+        )
+        parent = CorpusCase(
+            source=source,
+            gold=gold,
+            scenario_family=original.scenario_family,
+            lineage_by_ref={
+                ref: token
+                for ref, token in original.lineage_by_ref.items()
+                if ref != "REF-0004"
+            },
+        )
+
+        derived = derive_adversarial_case(
+            parent,
+            case_id="CASE-0021",
+            scenario_family=REVERSE_COUNTEREVIDENCE_FAMILY,
+        )
+
+        self.assertEqual(
+            run_b1_graph_time(derived.source)["classification"],
+            "COUNTEREVIDENCE",
+        )
+        minimal = project_case_evidence(derived.source, "minimal")
+        target_timelines = [
+            item
+            for item in minimal["evidence"]
+            if item["kind"] == "incident_timeline"
+            and item["payload"].get("unit") == "dependent.service"
+        ]
+        self.assertEqual(len(target_timelines), 1)
+        target_ref = target_timelines[0]["ref"]
+        self.assertIn(target_ref, derived.gold.counterevidence_refs)
+        self.assertEqual(
+            derived.lineage_by_ref[target_ref],
+            "derived:CASE-0021:reverse-target-timeline",
+        )
+        self.assertTrue(
+            derived.provenance_dict()["transformation_details"][
+                "target_timeline_synthesized_from_observed_anomaly"
+            ]
+        )
+
     def test_temporal_distractor_preserves_true_effect_but_marks_distractor_invalid(
         self,
     ) -> None:

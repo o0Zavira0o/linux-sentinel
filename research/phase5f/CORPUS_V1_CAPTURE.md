@@ -1,6 +1,6 @@
 # Phase 5F.3 Corpus-v1 Capture Protocol
 
-Status: FROZEN WITH CORRECTIVE PHASE-5F.3A LIVE-CAPTURE BOUNDARY FIX AFTER VALIDATION/CI
+Status: CORRECTIVE RE-FREEZE REQUIRED — second live attempt exposed reverse-transform assumption beyond empirical contract
 
 This document is an execution/capture protocol derived from the six Phase-5F preregistration documents. It does **not** change `THESIS.md`, `NON_GOALS.md`, `EVALUATION_PROTOCOL.md`, `BASELINES.md`, `METRICS.md`, or `KILL_CRITERIA.md`.
 
@@ -133,6 +133,8 @@ StateChangeTimestampMonotonic
 The sidecar must obtain at least one completed source/dependent sample round **before** invoking the frozen live runner. This prevents the RAW stream from beginning only after the controlled fault has already started.
 
 After the frozen live runner returns successfully, the sidecar must remain active until at least one completed source/dependent sample round has `captured_monotonic_usec >= ground_truth.ended_monotonic_usec`. The wait is explicitly bounded at 2.0 seconds. If that post-fault proof sample is not captured within the bound, the run fails and is not a corpus case. This rule was added after the first 5F.3B attempt exposed a race in which immediate sidecar shutdown could leave the last RAW sample just before the recorded fault end.
+
+The second 5F.3B attempt exposed a separate adversarial-derivation contract bug after the empirical campaign progressed: reverse/counterevidence derivation assumed every empirical effect parent had a target `incident_timeline`. That is not guaranteed because controlled-coverage anomaly evidence is sufficient for `EFFECT_OBSERVED` even when `pairwise_evidence` is absent. The corrected reverse transform must create only the **derived adversarial** target timeline when missing; it must not fabricate or backfill pairwise timing into the empirical parent.
 
 A nonzero `systemctl show` return code is a sidecar error and fails the run.
 
@@ -271,6 +273,7 @@ Transformation:
 - move the target anomaly to 100000 usec before the source transition;
 - remove the parent journal excerpt that would preserve stale forward chronology;
 - rewrite/add the RAW target anomaly at the reverse timestamp;
+- if the empirical parent has no target `incident_timeline` because `pairwise_evidence` was absent, synthesize the adversarial target timeline from the observed target anomaly at the derived reverse timestamp and mark that evidence lineage as derived rather than attributing exact pairwise timing to the empirical parent;
 - remove stale FULL derived controlled/synthesis records;
 - hidden gold = `COUNTEREVIDENCE`.
 

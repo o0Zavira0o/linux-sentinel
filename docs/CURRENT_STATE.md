@@ -3,7 +3,7 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **ACTIVE — 5F.3B live corpus capture, lineage audit, and corpus freeze**
+- Status: **PAUSED — 5F.3B blocked on second 5F.3A correctness correction before live restart**
 - Last updated: 2026-08-17
 - Last completed implementation milestone: Phase 5F.3A — Corpus Contract & Capture Harness
 - Last verified repository checkpoint before 5F.3A: `295a57975253441dc4e2a18290ce5043a57e938a`
@@ -170,7 +170,7 @@ Status: **ACTIVE**.
 
 **5F.3A — Corpus Contract & Capture Harness: CORRECTED AND RE-FROZEN FOR LIVE CAPTURE.** The initial live attempt on commit `07e19d5dbb39f831a69e4b41b60624ec786558f8` exposed a capture-boundary race: the read-only sidecar could be stopped immediately after the frozen runner returned, before a completed sample round reached the recorded controlled-fault end. The validator correctly rejected that candidate case. The corrective harness keeps the sidecar running, with a bounded wait, until a completed round is timestamped at or after the closed fault end; it fails explicitly if this proof sample is not obtained. The failed attempt produced no valid corpus-v1 and no scored output.
 
-**5F.3B — Live Corpus Capture & Freeze: CURRENT after corrective 5F.3A freeze.** Restart the campaign from the beginning using the corrective frozen harness, require one boot across pilot/campaign, capture 16 distinct empirical runs in the frozen order, derive 20 adversarial cases, audit same-case RAW/MINIMAL/FULL lineage and source-run grouping, archive/hash the corpus, then freeze it before any reasoner scoring.
+**5F.3B — Live Corpus Capture & Freeze: PAUSED pending second 5F.3A correctness correction.** The second live attempt using corrective harness commit `8638bc033d6010c0d98aec67802cb24f75def864` passed preflight and progressed beyond empirical live acquisition, then failed during reverse/counterevidence derivation because the transformation assumed every empirical effect case contained a target `incident_timeline`. That assumption is stronger than the production empirical contract: `EFFECT_OBSERVED` may come from controlled coverage when `pairwise_evidence` is absent. No corpus-v1 was exported and no scored output exists. Re-freeze the corrected transformation/test/docs before restarting 5F.3B from the beginning.
 
 ## Frozen FULL Reference and Repository Checkpoints
 

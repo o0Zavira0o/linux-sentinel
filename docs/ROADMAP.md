@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.5 — Primary Metrics; 5F.4 Structured Reasoner Output is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` with green exact-SHA CI run `32059127141`, corpus-v1 remains frozen with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`, and no scored reasoner output exists
+- Milestone: 5F.6 — Ablation; 5F.5 Primary Metrics is frozen at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` with green exact-SHA CI run `32062765897`, corpus-v1 and the 5F.4 structured-output boundary remain frozen, and no scored reasoner output exists
 
 ## Phase Overview
 
@@ -113,9 +113,9 @@ The private strict bare-JSON parser/validator implements the preregistered outpu
 
 ### 5F.5 — Primary Metrics
 
-Status: **ACTIVE — SCORER CANDIDATE IMPLEMENTED; VALIDATION/FREEZE PENDING BEFORE SCORED REASONER OUTPUTS**.
+Status: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`; exact-SHA CI run `32062765897` PASS**.
 
-The candidate private scorer implements the preregistered M1–M8 metrics, exact 36×3×3 scored-matrix validation, pseudoreplication grouping visibility, and all/HARD, empirical/adversarial, family, condition, and repeat slices. The frozen metric definitions, thresholds, HARD/full analysis sets, preregistration files, and benchmark-validity rules are not reopened. Authoritative Fedora validation passed 15/15 dedicated tests, the 89/89 private Phase-5F regression, and the full 1337/1337 repository gate with 156 Python files formatted and strict mypy clean across 84 source files. Scored B2/B3/B4 execution remains blocked until the scorer checkpoint is committed, pushed, exact-SHA CI-proven, and formally frozen.
+The private scorer implements the preregistered M1–M8 metrics, exact 36×3×3 scored-matrix validation, pseudoreplication grouping visibility, and all/HARD, empirical/adversarial, family, condition, and repeat slices. The frozen metric definitions, thresholds, HARD/full analysis sets, preregistration files, and benchmark-validity rules are not reopened. Authoritative Fedora validation passed 15/15 dedicated tests, the 89/89 private Phase-5F regression, and the full 1337/1337 repository gate with 156 Python files formatted and strict mypy clean across 84 source files. Exact repository/stage guards, checkpoint `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`, push/local-remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897` all passed. No scored reasoner output exists.
 
 - task correctness;
 - propagation Macro-F1;
@@ -127,6 +127,8 @@ The candidate private scorer implements the preregistered M1–M8 metrics, exact
 - run-to-run consistency.
 
 ### 5F.6 — Ablation
+
+Status: **ACTIVE**. Before the first scored output, freeze an execution manifest/preflight that proves identical B2/B3/B4 model/version, task wording, output schema, decoding/configuration, retry policy, fresh-context isolation, condition blinding, and adequate non-truncating context capacity. This operationalizes the frozen evaluation protocol; it does not reopen preregistered metrics, thresholds, corpus, or kill criteria.
 
 Mandatory:
 

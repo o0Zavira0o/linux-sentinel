@@ -14,13 +14,14 @@ Sentinel-X acquires bounded Linux/systemd/journald evidence, preserves provenanc
 - Frozen implementation baseline: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Completed implementation: Phase 0 through **Phase 5E.4**
 - Active phase: **Phase 5F — Falsification**
-- Last completed Phase-5F implementation milestone: **5F.4 — Structured Reasoner Output**
+- Last completed Phase-5F implementation milestone: **5F.5 — Primary Metrics**
 - Frozen Phase-5F.3A corrective checkpoint: **`ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI all passed**
 - Phase-5F.3 corpus milestone: **FROZEN — attempt #4 completed the full 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1**
 - Frozen corpus-v1 archive SHA-256: **`a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`**; **36 cases / 16 empirical / 20 adversarial / 28 HARD; no scored reasoner outputs**
 - Phase-5F.4 milestone: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — private strict JSON parser/validator, exact preregistered output boundary, Fedora validation, exact repository guards, push/remote equality, clean repository, and four-job CI run `32059127141` all passed; no scored output exists**
-- Current milestone: **5F.5 — Primary Metrics; the private M1–M8 scorer candidate has passed authoritative Fedora validation (15/15 dedicated tests, 89/89 private Phase-5F regression, 1337/1337 full unit tests, 156-file format/lint scope, and strict mypy over 84 source files), but checkpoint/push/exact-SHA CI freeze must complete before any scored B2/B3/B4 execution**
-- Last authoritative implementation gate: **1322/1322 unit tests PASS**, **154 Python files** in the source/test format/lint scope, strict mypy over **83 source files PASS**; the frozen 5F.4 boundary is CI-proven and no scored reasoner output exists
+- Phase-5F.5 milestone: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` — the private M1–M8 scorer passed authoritative Fedora validation (15/15 dedicated tests, 89/89 private Phase-5F regression, 1337/1337 full unit tests, 156-file format/lint scope, strict mypy over 84 source files), exact repository/stage guards, push/remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897`; no scored reasoner output exists**
+- Current milestone: **5F.6 — Ablation; first lock and verify the exact blinded B2/B3/B4 execution manifest/preflight, then execute the frozen RAW/MINIMAL/FULL comparison and mandatory field ablations**
+- Last authoritative implementation gate: **1337/1337 unit tests PASS**, **156 Python files** in the source/test format/lint scope, strict mypy over **84 source files PASS**; the frozen 5F.5 scorer checkpoint is CI-proven and no scored reasoner output exists
 - Phase 5E.4 controlled live proof: PASS
 - Status: research/experimental; **not production-grade**
 
@@ -57,7 +58,8 @@ The current repository includes:
 - conservative candidate-local and paired evidence synthesis;
 - pre-execution protocol provenance and protocol-bound controlled live execution;
 - private Phase-5F blinded RAW/MINIMAL/FULL projection with hidden-gold separation;
-- private deterministic Phase-5F comparators: B0 state rule, B1 Graph+Time, and B1S frozen-synthesis projection.
+- private deterministic Phase-5F comparators: B0 state rule, B1 Graph+Time, and B1S frozen-synthesis projection;
+- private frozen Phase-5F M1–M8 scorer with exact 324-attempt matrix validation and preregistered analysis slices.
 
 The Phase-5 dependency/reasoning subsystem remains a **research subsystem** and is not part of the normal `sentinel-x run` decision path.
 

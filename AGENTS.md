@@ -41,7 +41,8 @@ Never resolve contradictions silently. Report them.
 - Phase 5F.3A: **CORRECTIVE CHECKPOINT FROZEN — the third live-discovered multiple-candidate hidden-gold/live-shape correction is frozen at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` after Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and green four-job CI**
 - Phase 5F.3B: **FROZEN — authoritative attempt #4 captured 16 empirical cases, derived 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
 - Phase 5F.4: **FROZEN — structured reasoner output boundary frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` after Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and green four-job CI run `32059127141`; no scored reasoner output exists**
-- Active milestone: **5F.5 — Primary Metrics; implement and freeze the preregistered M1–M8 scoring boundary before any scored B2/B3/B4 run**
+- Phase 5F.5: **FROZEN — the private M1–M8 primary-metrics scorer is frozen at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` after authoritative Fedora validation, exact repository/stage guards, push/remote equality, clean-repository verification, and green four-job exact-SHA CI run `32062765897`; no scored reasoner output exists**
+- Active milestone: **5F.6 — Ablation; freeze the exact blinded execution manifest/preflight, then execute the preregistered RAW/MINIMAL/FULL comparisons and mandatory ablations without changing frozen metrics, thresholds, corpus, or FULL reference**
 
 The previous post-5E.4 feature-growth plan is superseded.
 

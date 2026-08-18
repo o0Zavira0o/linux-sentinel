@@ -25,8 +25,9 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.3A: **THIRD CORRECTIVE CHECKPOINT FROZEN at `ff0faa29dc0378263e84dcfbe74f5d46067a7f38` — dedicated, Phase-5F, full-project, research-harness static, exact repository/content, push/remote-equality, clean-repository, and four-job CI guards all passed**
 - Phase 5F.3B: **FROZEN — attempt #4 completed the fresh 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
 - Phase 5F.4: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — structured reasoner output boundary passed Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and four-job CI run `32059127141`; no scored output exists**
-- Current milestone: **5F.5 — Primary Metrics; scorer candidate implemented and Fedora-validated, checkpoint/CI freeze pending**
-- Last completed implementation milestone: **Phase 5F.4 — Structured Reasoner Output**
+- Phase 5F.5: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` — private M1–M8 scorer passed Fedora validation, exact repository/stage guards, push/remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897`; no scored reasoner output exists**
+- Current milestone: **5F.6 — Ablation; first freeze the exact blinded execution manifest/preflight, then run the preregistered RAW/MINIMAL/FULL comparison and mandatory ablations**
+- Last completed implementation milestone: **Phase 5F.5 — Primary Metrics**
 - Last completed research-artifact milestone: **Phase 5F.3B — Live Corpus Capture & Freeze**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
 
@@ -48,6 +49,7 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - protocol-bound live execution with boot/backend binding;
 - private Phase-5F RAW/MINIMAL/FULL projection from one gold-free case source, with hidden `CaseGold` kept outside visible exports;
 - private deterministic B0/B1/B1S comparators ready for later scoring, with no benchmark value conclusion assigned yet;
+- private frozen Phase-5F M1–M8 scorer with exact 324-attempt matrix validation and preregistered analysis slices;
 - frozen Phase-5F corpus-v1: 36 cases / 16 empirical / 20 adversarial / 28 HARD, with hidden/visible separation and source-run lineage independently audited before scoring.
 
 Frozen Phase-5E.4 FULL-reference Fedora baseline:
@@ -106,12 +108,13 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. validate and freeze the implemented 5F.5 M1–M8 scoring/aggregation candidate before inspecting scored B2/B3/B4 results;
-2. only after 5F.5 is frozen, execute isolated RAW/MINIMAL/FULL reasoner comparisons with identical task/output schema/configuration and fresh contexts;
-3. report preregistered HARD/full-corpus, empirical/adversarial, scenario-family, and repeat/condition analyses without changing frozen criteria;
-4. perform required Full-vs-Minimal and field ablations;
-5. issue one required Phase-5F verdict;
-6. only if the thesis survives, perform Phase 5R deletion-first reduction.
+1. before inspecting any scored benchmark result, freeze an exact 5F.6 execution manifest/preflight covering model identifier/version, task wording, output schema, decoding/configuration, retry behavior, fresh-context isolation, condition blinding, request/response provenance, and no-truncation capacity;
+2. execute isolated RAW/MINIMAL/FULL B2/B3/B4 comparisons under that frozen execution manifest, with three fresh runs per case/condition and no repository/history leakage;
+3. score/report the preregistered HARD/full-corpus, empirical/adversarial, scenario-family, and repeat/condition analyses without changing frozen criteria;
+4. perform required Full-vs-Minimal and field ablations, preserving the frozen FULL reference;
+5. score/report deterministic B0/B1/B1S comparators without changing their frozen implementations;
+6. issue one required Phase-5F verdict;
+7. only if the thesis survives, perform Phase 5R deletion-first reduction.
 
 ## Future-Sensitive Areas
 
@@ -165,7 +168,9 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 ## Last Updated
 
 - Date: 2026-08-17
-- Phase: 5F.5 primary metrics
+- Phase: 5F.6 ablation / blinded comparative evaluation
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
-- Update reason: 5F.4 is frozen and 5F.5 now has a private pre-score scorer candidate implementing M1–M8 and the preregistered analysis slices. The six frozen preregistration files and corpus-v1 remain unchanged; no scored B2/B3/B4 output exists. Authoritative Fedora validation passed 15/15 dedicated tests, 89/89 private Phase-5F tests, and the full 1337/1337 gate with 156 Python files formatted and strict mypy clean across 84 source files. Checkpoint, push, exact-SHA CI, and scorer freeze are still required before scored execution.
+- Frozen Phase-5F.5 scorer checkpoint: `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`
+- Phase-5F.5 exact-SHA CI run: `32062765897`
+- Update reason: 5F.5 is frozen after authoritative Fedora validation, exact repository/stage guards, checkpoint/push, local/remote equality, clean-repository verification, and four-job exact-SHA CI. The six frozen preregistration files, corpus-v1, 5F.4 output boundary, score semantics/thresholds, and FULL reference remain unchanged; no scored B2/B3/B4 output exists. 5F.6 is active, with an exact blinded execution manifest/preflight required before the first score-bearing run.

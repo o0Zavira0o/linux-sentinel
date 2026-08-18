@@ -3,10 +3,12 @@
 ## Current Phase
 
 - Phase: **5F — Falsification**
-- Status: **5F.3 FROZEN — corpus-v1 capture/audit/freeze complete; 5F.4 FROZEN — Structured Reasoner Output boundary CI-proven; 5F.5 ACTIVE — Primary Metrics scorer implementation/freeze before scored reasoner execution**
+- Status: **5F.3 FROZEN — corpus-v1 capture/audit/freeze complete; 5F.4 FROZEN — Structured Reasoner Output boundary CI-proven; 5F.5 FROZEN — Primary Metrics scorer CI-proven; 5F.6 ACTIVE — Ablation and blinded comparative-evaluation execution**
 - Last updated: 2026-08-17
-- Last completed implementation milestone: Phase 5F.4 — Structured Reasoner Output
+- Last completed implementation milestone: Phase 5F.5 — Primary Metrics
 - Last completed research-artifact milestone: Phase 5F.3B — Live Corpus Capture & Freeze
+- Frozen Phase-5F.5 implementation checkpoint: `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`
+- Phase-5F.5 checkpoint CI run: `32062765897`
 - Frozen Phase-5F.4 implementation checkpoint: `3604fb3ed5571ee02f5a6e448628ae68bc201f73`
 - Phase-5F.4 checkpoint CI run: `32059127141`
 - Phase-5F.3B closure / Phase-5F.4 activation checkpoint: `5be2e1f8d14c6ed2d235a7b34473a857952fe111`
@@ -93,7 +95,7 @@ The first Gate-3 operator audit attempt produced a false-positive failure becaus
 
 `research/phase5f/CORPUS_V1_CAPTURE.md` is retained byte-for-byte as the pre-score execution protocol. Its historical top-line corrective-status wording is not rewritten after observing the successful live result; this document and the Phase-5 status document carry the authoritative post-capture completion state.
 
-Phase-5F.4 is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`. The private `_phase5f` boundary provides strict bare-JSON parsing plus exact validation of `classification`, independent `abstain`, `claims`, `unresolved`, and top-level `evidence_refs`; it preserves independently scoreable semantic failures rather than repairing them. Authoritative Fedora validation passed the 14 dedicated 5F.4 tests, the 74-test private Phase-5F regression, documentation integrity, and the full 1322/1322 unit-test gate with 154 Python files formatted, Ruff clean, and strict mypy clean across 83 source files. Exact repository/stage guards, commit/push, local/remote equality, clean-repository verification, and four-job CI run `32059127141` also passed. No scorer, provider integration, prompt runner, or scored reasoner output has been added.
+Phase-5F.4 is frozen at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`. The private `_phase5f` boundary provides strict bare-JSON parsing plus exact validation of `classification`, independent `abstain`, `claims`, `unresolved`, and top-level `evidence_refs`; it preserves independently scoreable semantic failures rather than repairing them. Authoritative Fedora validation passed the 14 dedicated 5F.4 tests, the 74-test private Phase-5F regression, documentation integrity, and the full 1322/1322 unit-test gate with 154 Python files formatted, Ruff clean, and strict mypy clean across 83 source files. Exact repository/stage guards, commit/push, local/remote equality, clean-repository verification, and four-job CI run `32059127141` also passed. No provider integration, prompt runner, or scored reasoner output was added by 5F.4.
 
 ## Partially Completed / Research-Only Capabilities
 
@@ -191,11 +193,18 @@ Status: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`**.
 The minimal private parser/validator implements the preregistered common machine-readable final-output boundary (`classification`, `abstain`, `claims`, `unresolved`, `evidence_refs`) without touching frozen baseline behavior or hidden gold. Validation intentionally preserves independently scoreable semantic failures: abstention is not derived from classification; uncited claims remain parse-valid; well-formed but wrong evidence references remain parse-valid for later citation/provenance scoring. Fedora validation, exact workset/stage guards, commit/push, local/remote equality, clean-repository verification, and exact-SHA four-job CI run `32059127141` all passed.
 
 ### 5F.5 — Primary Metrics
-Status: **ACTIVE — SCORER CANDIDATE IMPLEMENTED; FEDORA VALIDATION / CHECKPOINT / CI FREEZE PENDING BEFORE SCORED OUTPUTS**.
+Status: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`; exact-SHA CI run `32062765897` PASS**.
 
-The private scorer candidate implements M1–M8 plus the preregistered all/HARD, empirical/adversarial, scenario-family, condition, and repeat aggregation boundaries without changing `research/phase5f/METRICS.md` or its thresholds. Hidden-gold scoring remains physically separate from visible projection. Authoritative Fedora validation passed 15/15 dedicated 5F.5 tests, the 89/89 private Phase-5F regression, documentation integrity, and the full 1337/1337 unit-test gate with 156 Python files formatted, Ruff clean, and strict mypy clean across 84 source files. Scored B2/B3/B4 execution remains blocked until the exact repository/stage guards, implementation checkpoint, push/local-remote equality, exact-SHA CI, and formal scorer freeze complete.
+The private scorer implements M1–M8 plus the preregistered all/HARD, empirical/adversarial, scenario-family, condition, and repeat aggregation boundaries without changing `research/phase5f/METRICS.md` or its thresholds. Hidden-gold scoring remains physically separate from visible projection. Authoritative Fedora validation passed 15/15 dedicated 5F.5 tests, the 89/89 private Phase-5F regression, documentation integrity, and the full 1337/1337 unit-test gate with 156 Python files formatted, Ruff clean, and strict mypy clean across 84 source files. Exact repository/stage guards, checkpoint `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`, push/local-remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897` all passed. No scored B2/B3/B4 output exists.
 
 Pre-score implementation interpretations are pinned now, before any benchmark result exists: parse failure receives no semantic repair and fabricates no claims/citations; M1 counts it incorrect, M2 treats the missing class as a false negative for the gold class, and M4 treats missing abstention as no positive abstention prediction. M3 treats only `causal_strength != none` as a causal claim and orders the frozen strengths `none < association < hypothesis < established_cause`; a causal claim is unsupported only when that rank exceeds hidden gold. M3/M5/M6 retain zero natural denominators when no valid claims/references exist. M5/M6 count claim-level reference uses, not top-level references: M5 counts a use as valid only when the ref belongs to hidden `supporting_evidence_refs`, while M6 counts a violation only when the ref belongs to hidden `invalid_evidence_refs`. M7 succeeds only when preregistered counterevidence is explicitly referenced at claim/top level or the final classification exactly matches the hidden gold classification. M8 uses the three-run denominator and never treats parse failures as a modal classification. For secondary slices lacking a class entirely, per-class F1 remains missing and the slice macro mean uses only defined classes; the primary HARD/full sets contain all five preregistered classes.
+
+### 5F.6 — Ablation
+Status: **ACTIVE**.
+
+The next score-bearing work is the preregistered RAW/MINIMAL/FULL comparison and mandatory ablation set. Before the first scored output is generated, the execution path must pin and verify the exact model identifier/version, task wording, output schema, decoding/configuration settings, retry limit/transport-failure handling, fresh-context isolation, condition blinding, evidence-block-only condition difference, request/response provenance, and no-truncation capacity for all views. These are execution controls for the already-frozen protocol, not new benchmark criteria.
+
+No scored benchmark result should be inspected until that pre-score execution manifest/preflight is frozen. The six preregistration files, frozen corpus-v1, frozen 5F.4 output boundary, frozen 5F.5 scorer, thresholds, and FULL Phase-5E.4 reference remain unchanged.
 
 ## Frozen FULL Reference and Repository Checkpoints
 
@@ -206,6 +215,8 @@ Pre-score implementation interpretations are pinned now, before any benchmark re
 - Phase-5F.3B closure / 5F.4 activation checkpoint: `5be2e1f8d14c6ed2d235a7b34473a857952fe111`
 - Frozen Phase-5F.4 Structured Reasoner Output checkpoint: `3604fb3ed5571ee02f5a6e448628ae68bc201f73`
 - Phase-5F.4 exact-SHA CI run: `32059127141`
+- Frozen Phase-5F.5 Primary Metrics checkpoint: `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`
+- Phase-5F.5 exact-SHA CI run: `32062765897`
 - Frozen corpus-v1 archive SHA-256: `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`
 - Branch: `sentinel-x-phase1`
 - Date: 2026-08-17

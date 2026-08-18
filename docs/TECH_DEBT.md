@@ -53,12 +53,12 @@ Some proof processes execute under operator-authorized sudo instead of a narrow 
 ## TD-013 — Graph+Time comparison not yet scored
 **Status:** implementation portion resolved in Phase 5F.2; evaluation remains open.
 
-A small B1 Graph+Time comparator now exists alongside B0 and B1S, but none has yet been scored on the frozen HARD corpus. Corpus-v1 is frozen by completed 5F.3B; the 5F.5 scorer has passed authoritative Fedora validation, and scoring remains intentionally blocked until its checkpoint is exact-SHA CI-proven and formally frozen. Current Phase-5 synthesis remains unvalidated against the smaller heuristic until later scoring milestones run.
+A small B1 Graph+Time comparator now exists alongside B0 and B1S, but none has yet been scored on the frozen HARD corpus. Corpus-v1 is frozen by completed 5F.3B and the 5F.5 scorer is frozen at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` with green exact-SHA CI run `32062765897`. Evaluation remains open under 5F.6; the exact blinded execution manifest/preflight must be frozen before inspecting score-bearing results. Current Phase-5 synthesis remains unvalidated against the smaller heuristic until those scoring milestones run.
 
 ## TD-014A — Corpus-v1 live capture not yet frozen
 **Status:** resolved by Phase 5F.3B.
 
-Attempt #4 captured all 16 empirical executions, derived all 20 adversarial cases, passed independent artifact audit, and froze corpus-v1 before scoring. The remaining benchmark gate is the 5F.5 scorer freeze, not corpus acquisition.
+Attempt #4 captured all 16 empirical executions, derived all 20 adversarial cases, passed independent artifact audit, and froze corpus-v1 before scoring. The 5F.5 scorer is also frozen; remaining benchmark work is the blinded 5F.6 execution/comparison/ablation path, not corpus acquisition or score-policy definition.
 
 ## TD-014 — No blinded RAW-vs-structured LLM baseline
 The core evidence thesis has no comparative LLM evaluation yet.

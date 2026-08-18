@@ -44,9 +44,13 @@ _MODEL_PARAMETER_SIZE: Final[str] = "11.9B"
 _MODEL_QUANTIZATION: Final[str] = "Q4_0"
 _MODEL_CONTEXT_CAPABILITY: Final[int] = 262_144
 
-# Candidate capacity controls.  They are intentionally not called frozen until
-# the complete 108-request exact token-count map has passed the generic preflight.
-_CONTEXT_WINDOW_TOKENS: Final[int] = 8_192
+# Corrective pre-score capacity candidate.  The frozen 8192-context token map
+# falsified the prior capacity assumption (56/108 requests over budget; maximum
+# input 38,091 tokens).  A 49,152-context f16 live proof then passed at 38,087
+# synthetic prompt tokens with exact tokenizer/inference count equality and zero
+# swap.  This capacity remains unfrozen until the 108-request map is rebound to
+# this corrected manifest and the generic no-truncation execution plan passes.
+_CONTEXT_WINDOW_TOKENS: Final[int] = 49_152
 _MAX_OUTPUT_TOKENS: Final[int] = 2_048
 _TOKEN_SAFETY_MARGIN: Final[int] = 1_024
 

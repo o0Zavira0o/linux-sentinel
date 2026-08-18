@@ -95,7 +95,7 @@ class Phase5FOllamaExecutionTests(unittest.TestCase):
             manifest["model_version"],
             "be1d79d105352d8cb0a25ee03f1f315935cc93fb4f0674422c2bb13be72fc025",
         )
-        self.assertEqual(manifest["context_window_tokens"], 8192)
+        self.assertEqual(manifest["context_window_tokens"], 49152)
         self.assertEqual(manifest["max_output_tokens"], 2048)
         self.assertEqual(manifest["token_safety_margin"], 1024)
 
@@ -187,7 +187,7 @@ class Phase5FOllamaExecutionTests(unittest.TestCase):
         self.assertFalse(payload["shift"])
         self.assertEqual(payload["keep_alive"], 0)
         options = cast(Mapping[str, object], payload["options"])
-        self.assertEqual(options["num_ctx"], 8192)
+        self.assertEqual(options["num_ctx"], 49152)
         self.assertEqual(options["num_predict"], 2048)
         self.assertEqual(options["seed"], 3253)
         self.assertEqual(options["temperature"], 1.0)

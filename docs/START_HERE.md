@@ -26,7 +26,7 @@ Sentinel-X is a Linux/systemd evidence framework whose current research thesis i
 - Phase 5F.3B: **FROZEN — attempt #4 completed the fresh 16-run empirical campaign, derived all 20 adversarial cases, passed independent exported-artifact audit, and froze corpus-v1 with archive SHA-256 `a31876f660d61f3bb9d14f181c6da78568f67fa05631b264804e589189886e18`; no scored reasoner output exists**
 - Phase 5F.4: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73` — structured reasoner output boundary passed Fedora validation, exact repository guards, push/remote equality, clean-repository verification, and four-job CI run `32059127141`; no scored output exists**
 - Phase 5F.5: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` — private M1–M8 scorer passed Fedora validation, exact repository/stage guards, push/remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897`; no scored reasoner output exists**
-- Current milestone: **5F.6 — Ablation; first freeze the exact blinded execution manifest/preflight, then run the preregistered RAW/MINIMAL/FULL comparison and mandatory ablations**
+- Current milestone: **5F.6 — Ablation; the provider-neutral blinded execution-manifest/preflight implementation has passed authoritative Fedora validation but is not yet checkpoint/CI-frozen. No concrete provider/model manifest, mandatory-ablation view, or score-bearing reasoner output is frozen yet.**
 - Last completed implementation milestone: **Phase 5F.5 — Primary Metrics**
 - Last completed research-artifact milestone: **Phase 5F.3B — Live Corpus Capture & Freeze**
 - Previous planned 5E.5+ feature-growth sequence: **superseded**
@@ -108,13 +108,14 @@ See [`KNOWN_EXCEPTIONS.md`](KNOWN_EXCEPTIONS.md). Important examples:
 
 ## Immediate Next Work
 
-1. before inspecting any scored benchmark result, freeze an exact 5F.6 execution manifest/preflight covering model identifier/version, task wording, output schema, decoding/configuration, retry behavior, fresh-context isolation, condition blinding, request/response provenance, and no-truncation capacity;
-2. execute isolated RAW/MINIMAL/FULL B2/B3/B4 comparisons under that frozen execution manifest, with three fresh runs per case/condition and no repository/history leakage;
-3. score/report the preregistered HARD/full-corpus, empirical/adversarial, scenario-family, and repeat/condition analyses without changing frozen criteria;
-4. perform required Full-vs-Minimal and field ablations, preserving the frozen FULL reference;
-5. score/report deterministic B0/B1/B1S comparators without changing their frozen implementations;
-6. issue one required Phase-5F verdict;
-7. only if the thesis survives, perform Phase 5R deletion-first reduction.
+1. validate and freeze the generic provider-neutral 5F.6 execution-preflight implementation without generating any score-bearing output;
+2. instantiate and freeze one exact provider/model identifier/version/configuration/tokenizer/context manifest, measure all 108 case-condition semantic requests with that tokenizer, and freeze the resulting 324-attempt no-truncation plan;
+3. freeze the exact corpus-specific mechanical view construction for every mandatory 5F.6 field ablation before inspecting any benchmark score;
+4. execute B2 RAW, B3 MINIMAL, B4 FULL, and the mandatory ablations with fresh isolated requests and logged exact-request transport retries only;
+5. parse and score with the frozen 5F.4/5F.5 boundaries, preserving invalid structured outputs, missingness, provenance violations, counterevidence, and pseudoreplication grouping;
+6. evaluate the deterministic B0/B1/B1S comparators on the frozen corpus without changing their frozen implementations;
+7. apply the frozen 5F.7 A/B/C/D/E decision rules without post-hoc threshold or subset changes;
+8. enter 5R only if the evidence thesis survives and the frozen roadmap authorizes reduction.
 
 ## Future-Sensitive Areas
 
@@ -167,10 +168,12 @@ Reconstruct project goal, current architecture, completed phases, current phase,
 
 ## Last Updated
 
-- Date: 2026-08-17
+- Date: 2026-08-18
 - Phase: 5F.6 ablation / blinded comparative evaluation
 - Frozen FULL reference: `1733485fdce630e4a3c32731c7dcbc62cbdebefb`
 - Frozen Phase-5F.2 checkpoint: `295a57975253441dc4e2a18290ce5043a57e938a`
 - Frozen Phase-5F.5 scorer checkpoint: `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`
 - Phase-5F.5 exact-SHA CI run: `32062765897`
-- Update reason: 5F.5 is frozen after authoritative Fedora validation, exact repository/stage guards, checkpoint/push, local/remote equality, clean-repository verification, and four-job exact-SHA CI. The six frozen preregistration files, corpus-v1, 5F.4 output boundary, score semantics/thresholds, and FULL reference remain unchanged; no scored B2/B3/B4 output exists. 5F.6 is active, with an exact blinded execution manifest/preflight required before the first score-bearing run.
+- Phase-5F.5 formal freeze / 5F.6 activation commit: `5d8c1e227894a88a1f46de715b506903ceb58045`
+- Phase-5F.5 formal-freeze CI run: `32105743211`
+- Update reason: 5F.5 is formally frozen after its CI-proven scorer checkpoint and a separate docs-only freeze/5F.6-activation transition with green exact-SHA CI. The six frozen preregistration files, corpus-v1, 5F.4 output boundary, 5F.5 score semantics/thresholds, and FULL reference remain unchanged; no scored B2/B3/B4 output exists. The 5F.6 provider-neutral execution-preflight implementation has now passed authoritative Fedora validation (16/16 dedicated, 105/105 private Phase-5F, 1353/1353 full unit tests, 158-file format/lint scope, strict mypy over 85 source files), but checkpoint/CI freeze remains pending; concrete provider/model execution and mandatory-ablation views remain blocked until their exact pre-score controls are separately frozen.

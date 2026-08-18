@@ -174,7 +174,7 @@ Status: **FROZEN at `3604fb3ed5571ee02f5a6e448628ae68bc201f73`**.
 The minimal private implementation performs strict bare-JSON parsing and exact validation for the preregistered final output: classification, independent abstention, claims with causal strength/evidence references/text, unresolved items, and top-level evidence references. It rejects duplicate JSON keys, non-standard constants, prose/code fences, schema extras, malformed/duplicate reference syntax, and invalid causal-strength labels without importing hidden gold or scoring policy. It deliberately does not infer abstention from classification, require citations on claims, or reject well-formed references merely because they are unsupported/wrong-scope; those remain independently measurable failures for later frozen scoring. Frozen B0/B1/B1S behavior is untouched. Fedora validation, exact repository/stage guards, commit/push, local/remote equality, clean-repository verification, and four-job exact-SHA CI run `32059127141` all passed. No scored B2/B3/B4 output exists.
 
 ### 5F.5 — Primary Metrics
-Status: **FROZEN at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`; exact-SHA CI run `32062765897` PASS**.
+Status: **FROZEN at implementation checkpoint `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`; exact-SHA CI run `32062765897` PASS; formal freeze/5F.6 activation commit `5d8c1e227894a88a1f46de715b506903ceb58045` with exact-SHA CI run `32105743211` PASS**.
 
 The private scorer implements M1–M8 and the preregistered corpus analysis slices without modifying the six frozen preregistration files. It validates the exact 324-attempt LLM matrix and preserves `source_run_group` visibility so adversarial derivatives are never silently presented as independent empirical runs.
 
@@ -183,9 +183,13 @@ Before any scored output exists, the implementation pins the otherwise machine-n
 This is a pre-score implementation interpretation, not a rewrite of `METRICS.md`, `EVALUATION_PROTOCOL.md`, thresholds, gold, corpus, or kill criteria. Authoritative Fedora validation passed 15/15 dedicated 5F.5 tests, the 89/89 private Phase-5F regression, documentation integrity, and the full 1337/1337 repository gate with 156 Python files formatted and strict mypy clean across 84 source files. Exact repository/stage guards, checkpoint `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`, push/local-remote equality, clean-repository verification, and four-job exact-SHA CI run `32062765897` all passed. No scored B2/B3/B4 output exists.
 
 ### 5F.6 — Ablation
-Status: **ACTIVE**.
+Status: **ACTIVE — provider-neutral execution-preflight implementation Fedora-validated; checkpoint/CI freeze pending**.
 
-The preregistered RAW/MINIMAL/FULL comparison and required field ablations remain pending. Before the first scored output, freeze an execution manifest/preflight that proves identical B2/B3/B4 model identifier/version, task wording, output schema, decoding/configuration, retry handling, fresh-context isolation, condition blinding, evidence-block-only condition difference, request/response provenance, and adequate no-truncation context capacity. These controls operationalize the frozen evaluation protocol; they do not change the six preregistration files, score semantics, thresholds, corpus, FULL reference, or kill criteria.
+The candidate is a private function-only boundary that performs no provider call, scoring, or hidden-gold access. It pins the common prompt/output-schema digests and frozen prerequisite identities; validates an explicit provider/model identifier/version/configuration/tokenizer/context manifest; requires fresh stateless no-tool/no-web requests; fixes provider/transport failure handling to at most one retry of the exact semantic request; keeps condition/repeat control metadata outside the reasoner-visible request; deterministically plans exactly 324 B2/B3/B4 attempts; and rejects any plan whose externally measured 108 semantic-request token counts do not fit the pinned context/output/safety budget without truncation. Invalid structured output is not transport-retried and remains unrepaired for the frozen 5F.4/5F.5 path.
+
+The generic boundary deliberately does not choose a concrete provider/model and does not yet construct the mandatory field-ablation views. Before the first score-bearing request, the concrete manifest, tokenizer-measured 108-request capacity map, resulting 324-attempt execution plan, and exact corpus-specific mechanical construction of every mandatory ablation must be frozen. Ablation identity remains execution/report metadata; the frozen M1–M8 scorer is not reopened to add new condition labels.
+
+These controls operationalize the frozen evaluation protocol; they do not change the six preregistration files, score semantics, thresholds, corpus, FULL reference, or kill criteria. No scored output may be generated or inspected while these pre-score controls remain unfrozen.
 
 ### 5F.7 — Decision
 Must choose A/B/C/D/E verdict.

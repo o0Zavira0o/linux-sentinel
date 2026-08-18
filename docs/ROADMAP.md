@@ -14,7 +14,7 @@
 
 - Phase 5E.4: FROZEN reference
 - Phase 5F: ACTIVE
-- Milestone: 5F.6 — Ablation; 5F.5 Primary Metrics is frozen at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5` with green exact-SHA CI run `32062765897`, corpus-v1 and the 5F.4 structured-output boundary remain frozen, and no scored reasoner output exists
+- Milestone: 5F.6 — Ablation; 5F.5 Primary Metrics implementation is frozen at `8f59bf04ae1e9e755cc6a7f7e0662d8be8d984c5`, the formal 5F.5 freeze/5F.6 activation transition is CI-proven at `5d8c1e227894a88a1f46de715b506903ceb58045` via run `32105743211`, and the provider-neutral execution-preflight implementation has passed authoritative Fedora validation but is not yet checkpoint/CI-frozen; no concrete provider/model manifest, mandatory-ablation view, or scored reasoner output is frozen
 
 ## Phase Overview
 
@@ -128,10 +128,11 @@ The private scorer implements the preregistered M1–M8 metrics, exact 36×3×3 
 
 ### 5F.6 — Ablation
 
-Status: **ACTIVE**. Before the first scored output, freeze an execution manifest/preflight that proves identical B2/B3/B4 model/version, task wording, output schema, decoding/configuration, retry policy, fresh-context isolation, condition blinding, and adequate non-truncating context capacity. This operationalizes the frozen evaluation protocol; it does not reopen preregistered metrics, thresholds, corpus, or kill criteria.
+Status: **ACTIVE — provider-neutral execution-preflight implementation Fedora-validated; checkpoint/CI freeze pending**. Authoritative Fedora validation passed 16/16 dedicated tests, 105/105 private Phase-5F tests, 1353/1353 full unit tests, 158-file format/lint scope, and strict mypy over 85 source files. The implementation operationalizes the frozen B2/B3/B4 fairness constraints without selecting a vendor or calling a provider: it pins prompt/output-schema digests and frozen-artifact identities, requires one explicit model/version/configuration/tokenizer manifest, fixes fresh stateless no-tool/no-web requests, pins at most one exact-request retry for provider/transport failure, deterministically plans the 36 x 3 x 3 execution matrix, and rejects any case-condition request whose externally measured token count would risk truncation under the pinned context/output budget. Invalid structured output remains unrepaired and is not transport-retried.
+
+Before the first score-bearing request, freeze the concrete provider/model manifest plus all 108 measured semantic-request token counts and the resulting 324-attempt plan. Also freeze the exact corpus-specific mechanical construction of every mandatory field-ablation view before inspecting any benchmark score. Ablation identity belongs to execution/report metadata; do not reopen the frozen M1–M8 scorer merely to add ablation condition labels. The six preregistration files, thresholds, corpus-v1, frozen reasoner-output/scorer boundaries, FULL reference, and kill criteria remain unchanged.
 
 Mandatory:
-
 - FULL vs MINIMAL;
 - remove topology;
 - remove coverage;

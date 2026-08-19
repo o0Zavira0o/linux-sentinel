@@ -4,11 +4,11 @@ This document describes the architecture that **exists now**: the frozen Phase-5
 
 ## Architecture Overview
 
-Sentinel-X currently contains two partially overlapping worlds:
+Sentinel-X currently contains three partially overlapping worlds:
 
 1. an operational Linux observation/detection runtime used by the CLI;
 2. a Phase-5 dependency/propagation **research subsystem** used by tests and controlled experiment/proof workflows rather than by the normal CLI decision path;
-3. a private Phase-5F **evaluation-only projection boundary** that creates blinded RAW/MINIMAL/FULL evidence bundles and keeps hidden gold outside the visible export path.
+3. a private Phase-5F **falsification/evaluation boundary** that owns blinded RAW/MINIMAL/FULL projection, corpus handling, reasoner-output/scoring adapters, pre-score execution controls, mandatory ablation construction, and scorer-side ablation aggregation while keeping hidden gold outside every reasoner-visible path.
 
 ```text
 Linux / proc / filesystem / systemd / journald
@@ -63,7 +63,7 @@ visible CaseSource
         |
  blinded evidence bundle
 
-hidden CaseGold -> scorer-only future path
+hidden CaseGold -> scorer-side evaluation path only
 ```
 
 ## Repository Structure
@@ -198,14 +198,19 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 
 **Purpose:** private evaluation-only support for the Phase-5F falsification benchmark.
 
-**Current scope (through 5F.3A):**
+**Current scope (through the CI-proven 5F.6 ablation-scoring checkpoint):**
 - `visible.py` owns one immutable gold-free `CaseSource` and the RAW/MINIMAL/FULL projection function;
 - `gold.py` owns hidden scorer-only `CaseGold` and is deliberately not re-exported by the package root;
-- `_common.py` contains only shared opaque case/reference validation primitives;
-- `baselines.py` owns three function-only deterministic comparators: B0 state rule, B1 Graph+Time, and B1S projection of the existing frozen synthesis serialization;
-- `corpus.py` owns the private `CorpusCase` contract, frozen case plan, lineage audit, hidden/visible separation, and atomic corpus export;
-- `corpus_empirical.py` binds one frozen protocol-bound live execution plus bounded read-only sidecar evidence into an empirical case;
-- `corpus_transformations.py` owns the five frozen deterministic adversarial transformations and explicitly removes stale FULL derived evidence when a transformation invalidates its parent assumptions.
+- `_common.py` contains shared opaque case/reference validation primitives;
+- `baselines.py` owns the function-only B0, B1, and B1S deterministic comparators;
+- `corpus.py`, `corpus_empirical.py`, and `corpus_transformations.py` own the frozen corpus contract, empirical binding, lineage/hidden-visible separation, export, and five deterministic adversarial transformations;
+- `reasoner_output.py` owns the strict preregistered bare-JSON final-output parser/validator and performs no scoring or semantic repair;
+- `scoring.py` owns the frozen hidden-gold M1–M8 primary-metrics scorer and exact RAW/MINIMAL/FULL scored-matrix validation;
+- `deterministic_scoring.py` adapts B0/B1/B1S outputs to the frozen scorer while keeping baseline identity outside scorer rows;
+- `execution.py` owns provider-neutral pre-score request/preflight contracts, deterministic B2/B3/B4 planning, retry policy, and no-truncation capacity checks without choosing a provider;
+- `ollama_execution.py` pins the current local Ollama/Gemma execution identity and exposes only non-score-bearing identity/render/tokenizer/capacity-preflight behavior; normal score-bearing generation transport is still absent;
+- `ablation.py` owns the frozen deletion-only seven mandatory field mappings and base-condition identity;
+- `ablation_scoring.py` is the private scorer-side adapter for already-captured mandatory-ablation outputs. At checkpoint `07330c4d68d149075ce0c906e4f50e046d9221b1` it pins execution semantics SHA-256 `d0d36ca82238e70623a400a80ffb5e2c010c8db66e38edef7625a0a34fd1767d`, requires exactly 7×36×3 = 756 outputs, routes six mappings through `minimal` and one through `full`, keeps mapping identity outside the frozen scorer row, and aggregates M8 independently per mapping.
 
 **Key invariants:**
 - all three evidence conditions originate from one `CaseSource`;
@@ -220,6 +225,10 @@ This package is intentionally retained intact during Phase 5F so FULL evidence c
 - B1S consumes only FULL current-synthesis serialization and does not upgrade forward temporal consistency alone into an observed effect;
 - corpus-v1 keeps hidden gold/provenance physically separate from visible RAW/MINIMAL/FULL JSONL exports;
 - derived adversarial variants inherit their empirical parent `source_run_group` and therefore are not independent empirical replications;
+- hidden `CaseGold` may be consumed only by scorer-side evaluation after reasoner-visible output has been captured; it never enters prompt/request construction;
+- the frozen 5F.5 scorer is not reopened to encode baseline or ablation identity; those identities remain in outer adapter/report metadata;
+- mandatory ablation scoring accepts only the frozen seven mappings, exact 36-case corpus membership, and repeats 1/2/3; M8 is grouped independently per mapping;
+- `scored_execution_authorized=False` remains the controlling pre-score state until the external score-bearing ablation execution boundary is frozen separately;
 - `research/phase5f/capture_corpus_v1.py` is an operator-only evaluation harness: it reuses the frozen 5E.4 mutation runner and adds only bounded read-only `systemctl show` / `journalctl` sidecar capture.
 
 `CaseGold` is a hidden benchmark/scoring artifact, not operational diagnosis truth and not a reasoner-visible object.
@@ -275,13 +284,17 @@ Do not introduce a dependency from core/systemd operational primitives back into
 6. synthesize candidate-local/paired evidence;
 7. capture exact protocol and backend/boot-bound execution provenance.
 
-### Phase-5F evaluation projection
+### Phase-5F falsification/evaluation path
 
-1. assemble one gold-free `CaseSource` with opaque stable evidence references;
-2. project the same case into RAW, MINIMAL, or FULL using one private function;
-3. serialize only common case/task/environment/evidence fields, never the condition label;
-4. keep `CaseGold` in the hidden scorer-only module and out of visible exports;
-5. defer baselines, reasoner output models, scoring, corpus generation, and LLM integration to later 5F milestones.
+1. assemble one gold-free `CaseSource` with opaque stable evidence references and project the same underlying case into RAW, MINIMAL, or FULL;
+2. freeze visible corpus artifacts separately from hidden `CaseGold`, preserving source-run lineage and derived-case pseudoreplication grouping;
+3. run deterministic baselines or, only after the relevant execution freeze, capture fresh reasoner outputs through a provider-specific execution boundary without exposing hidden gold;
+4. validate reasoner final output through the strict 5F.4 bare-JSON boundary without semantic repair;
+5. score captured outputs through the frozen 5F.5 scorer; hidden gold is introduced only at this scorer-side stage;
+6. adapt deterministic B0/B1/B1S identity outside scorer rows through `deterministic_scoring.py`;
+7. build mandatory visible-only deletion ablations through `ablation.py`, preserving the frozen seven mapping identities and base conditions;
+8. score already-captured mandatory-ablation outputs through `ablation_scoring.py`, validating the exact 756-output matrix and keeping M8 independent per mapping;
+9. keep normal score-bearing external ablation execution blocked until its exact request/order/seed/retry/output-capture identity is frozen separately.
 
 ## State Ownership
 
@@ -328,7 +341,7 @@ Current native external interfaces:
 - journald evidence;
 - systemd runtime unit directory for controlled lab fixtures.
 
-There is currently no OpenTelemetry, Prometheus ingestion, external chaos backend, or LLM runtime adapter.
+There is currently no OpenTelemetry, Prometheus ingestion, or external chaos backend. A private Phase-5F local Ollama/Gemma evaluation adapter exists for pinned identity, render/tokenizer checks, and capacity/live preflight, but it is not a production LLM integration and normal score-bearing generation transport remains absent.
 
 ## Authentication / Authorization / Privilege
 
